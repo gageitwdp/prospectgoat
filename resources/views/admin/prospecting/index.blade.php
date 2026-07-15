@@ -47,19 +47,79 @@
 
                     <div class="mt-6 grid gap-4 sm:grid-cols-2">
                         <div class="rounded-xl border border-[var(--lp-border)] p-4">
-                            <p class="text-xs uppercase tracking-[0.12em] lp-muted">Owner Full Name</p>
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-xs uppercase tracking-[0.12em] lp-muted">Owner Full Name</p>
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-[var(--lp-border)] p-1.5 lp-muted transition hover:bg-[var(--lp-canvas)] hover:lp-title"
+                                    @click="copyField(currentRow?.owner_full_name || '', 'Owner full name')"
+                                    :disabled="!(currentRow?.owner_full_name || '').trim()"
+                                    aria-label="Copy owner full name"
+                                    title="Copy"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125H5.25a1.125 1.125 0 0 1-1.125-1.125V8.25c0-.621.504-1.125 1.125-1.125h3.375" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 15.75h9A1.5 1.5 0 0 0 20.25 14.25v-9a1.5 1.5 0 0 0-1.5-1.5h-9a1.5 1.5 0 0 0-1.5 1.5v9a1.5 1.5 0 0 0 1.5 1.5Z" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p class="mt-1 text-sm lp-title" x-text="currentRow?.owner_full_name || 'N/A'"></p>
                         </div>
                         <div class="rounded-xl border border-[var(--lp-border)] p-4">
-                            <p class="text-xs uppercase tracking-[0.12em] lp-muted">Property Full Address</p>
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-xs uppercase tracking-[0.12em] lp-muted">Property Full Address</p>
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-[var(--lp-border)] p-1.5 lp-muted transition hover:bg-[var(--lp-canvas)] hover:lp-title"
+                                    @click="copyField(currentRow?.property_full_address || '', 'Property full address')"
+                                    :disabled="!(currentRow?.property_full_address || '').trim()"
+                                    aria-label="Copy property full address"
+                                    title="Copy"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125H5.25a1.125 1.125 0 0 1-1.125-1.125V8.25c0-.621.504-1.125 1.125-1.125h3.375" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 15.75h9A1.5 1.5 0 0 0 20.25 14.25v-9a1.5 1.5 0 0 0-1.5-1.5h-9a1.5 1.5 0 0 0-1.5 1.5v9a1.5 1.5 0 0 0 1.5 1.5Z" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p class="mt-1 text-sm lp-title" x-text="currentRow?.property_full_address || 'N/A'"></p>
                         </div>
                         <div class="rounded-xl border border-[var(--lp-border)] p-4">
-                            <p class="text-xs uppercase tracking-[0.12em] lp-muted">Phone Number</p>
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-xs uppercase tracking-[0.12em] lp-muted">Phone Number</p>
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-[var(--lp-border)] p-1.5 lp-muted transition hover:bg-[var(--lp-canvas)] hover:lp-title"
+                                    @click="copyField(currentEdit().phone || '', 'Phone number')"
+                                    :disabled="!(currentEdit().phone || '').trim()"
+                                    aria-label="Copy phone number"
+                                    title="Copy"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125H5.25a1.125 1.125 0 0 1-1.125-1.125V8.25c0-.621.504-1.125 1.125-1.125h3.375" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 15.75h9A1.5 1.5 0 0 0 20.25 14.25v-9a1.5 1.5 0 0 0-1.5-1.5h-9a1.5 1.5 0 0 0-1.5 1.5v9a1.5 1.5 0 0 0 1.5 1.5Z" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p class="mt-1 text-sm lp-title" x-text="effectivePhone()"></p>
                         </div>
                         <div class="rounded-xl border border-[var(--lp-border)] p-4">
-                            <p class="text-xs uppercase tracking-[0.12em] lp-muted">Email</p>
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-xs uppercase tracking-[0.12em] lp-muted">Email</p>
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-[var(--lp-border)] p-1.5 lp-muted transition hover:bg-[var(--lp-canvas)] hover:lp-title"
+                                    @click="copyField(currentEdit().email || '', 'Email')"
+                                    :disabled="!(currentEdit().email || '').trim()"
+                                    aria-label="Copy email"
+                                    title="Copy"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125H5.25a1.125 1.125 0 0 1-1.125-1.125V8.25c0-.621.504-1.125 1.125-1.125h3.375" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 15.75h9A1.5 1.5 0 0 0 20.25 14.25v-9a1.5 1.5 0 0 0-1.5-1.5h-9a1.5 1.5 0 0 0-1.5 1.5v9a1.5 1.5 0 0 0 1.5 1.5Z" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p class="mt-1 text-sm lp-title" x-text="effectiveEmail()"></p>
                         </div>
                     </div>
@@ -87,7 +147,9 @@
                     </div>
 
                     <p class="mt-4 text-sm text-emerald-700" x-text="saveSuccess" x-show="saveSuccess" x-cloak></p>
+                    <p class="mt-2 text-sm text-emerald-700" x-text="copySuccess" x-show="copySuccess" x-cloak></p>
                     <p class="mt-2 text-sm text-red-600" x-text="saveError" x-show="saveError" x-cloak></p>
+                    <p class="mt-2 text-sm text-red-600" x-text="copyError" x-show="copyError" x-cloak></p>
                     <p class="mt-2 text-xs lp-muted" x-show="savedRows[currentIndex]" x-cloak>This card has already been saved in this session.</p>
                 </article>
 
@@ -136,6 +198,8 @@
                 parseError: '',
                 saveSuccess: '',
                 saveError: '',
+                copySuccess: '',
+                copyError: '',
                 modalPhone: '',
                 modalEmail: '',
                 parseUrl: @js(route('admin.prospecting.parse-csv')),
@@ -156,12 +220,66 @@
 
                 effectivePhone() {
                     const phone = this.currentEdit().phone.trim();
-                    return phone !== '' ? phone : 'Not provided';
+                    if (phone === '') {
+                        return 'Not provided';
+                    }
+
+                    const digitsOnly = phone.replace(/\D/g, '');
+
+                    if (digitsOnly.length === 10) {
+                        return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
+                    }
+
+                    if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+                        return `+1 (${digitsOnly.slice(1, 4)}) ${digitsOnly.slice(4, 7)}-${digitsOnly.slice(7)}`;
+                    }
+
+                    return phone;
                 },
 
                 effectiveEmail() {
                     const email = this.currentEdit().email.trim();
                     return email !== '' ? email : 'Not provided';
+                },
+
+                clearCopyMessages() {
+                    this.copySuccess = '';
+                    this.copyError = '';
+                },
+
+                async copyField(value, label) {
+                    const text = String(value || '').trim();
+                    this.clearCopyMessages();
+
+                    if (text === '') {
+                        this.copyError = `No ${label.toLowerCase()} to copy.`;
+                        return;
+                    }
+
+                    try {
+                        if (navigator.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(text);
+                        } else {
+                            const tempInput = document.createElement('textarea');
+                            tempInput.value = text;
+                            tempInput.setAttribute('readonly', '');
+                            tempInput.style.position = 'absolute';
+                            tempInput.style.left = '-9999px';
+                            document.body.appendChild(tempInput);
+                            tempInput.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tempInput);
+                        }
+
+                        this.copySuccess = `${label} copied to clipboard.`;
+                        setTimeout(() => {
+                            if (this.copySuccess === `${label} copied to clipboard.`) {
+                                this.copySuccess = '';
+                            }
+                        }, 2000);
+                    } catch (error) {
+                        this.copyError = `Could not copy ${label.toLowerCase()}.`;
+                    }
                 },
 
                 async parseCsv() {
@@ -202,6 +320,7 @@
                         this.currentIndex = 0;
                         this.edits = {};
                         this.savedRows = {};
+                        this.clearCopyMessages();
                         this.parseSuccess = data.message || 'CSV loaded successfully.';
                     } catch (error) {
                         this.parseError = 'Unable to parse CSV file.';
@@ -215,6 +334,7 @@
                         this.currentIndex -= 1;
                         this.saveSuccess = '';
                         this.saveError = '';
+                        this.clearCopyMessages();
                     }
                 },
 
@@ -223,6 +343,7 @@
                         this.currentIndex += 1;
                         this.saveSuccess = '';
                         this.saveError = '';
+                        this.clearCopyMessages();
                     }
                 },
 

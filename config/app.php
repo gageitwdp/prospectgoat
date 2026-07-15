@@ -54,7 +54,7 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    'prospectgoat_contact_phone' => env('PROSPECTGOAT_CONTACT_PHONE', env('LEZIN_CONTACT_PHONE', '(470) 588-1505')),
+    'prospectgoat_contact_phone' => env('PROSPECTGOAT_CONTACT_PHONE', '(470) 588-1505'),
 
     /*
     |--------------------------------------------------------------------------

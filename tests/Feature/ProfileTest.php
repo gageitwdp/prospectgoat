@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\AdminEmailTestMail;
 use App\Models\Account;
 use App\Models\User;
+use App\Services\Billing\StripeBillingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -82,6 +83,69 @@ class ProfileTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Global Account Oversight');
+    }
+
+    public function test_owner_profile_shows_subscription_management_section(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+
+        $response = $this
+            ->actingAs($owner)
+            ->get('/profile');
+
+        $response->assertOk();
+        $response->assertSee('Subscription Management');
+    }
+
+    public function test_agent_profile_does_not_show_subscription_management_section(): void
+    {
+        $agent = User::factory()->create(['role' => 'agent']);
+
+        $response = $this
+            ->actingAs($agent)
+            ->get('/profile');
+
+        $response->assertOk();
+        $response->assertDontSee('Subscription Management');
+    }
+
+    public function test_owner_can_open_stripe_subscription_portal(): void
+    {
+        $owner = User::factory()->create([
+            'role' => 'owner',
+            'account_id' => Account::factory()->create([
+                'stripe_customer_id' => 'cus_portal_test_1',
+            ])->id,
+        ]);
+
+        $this->mock(StripeBillingService::class, function ($mock) use ($owner): void {
+            $mock->shouldReceive('canOpenCustomerPortal')
+                ->once()
+                ->withArgs(fn (Account $account) => $account->id === $owner->account_id)
+                ->andReturn(true);
+
+            $mock->shouldReceive('createCustomerPortalSession')
+                ->once()
+                ->withArgs(fn (Account $account, string $returnUrl) => $account->id === $owner->account_id && str_contains($returnUrl, '/profile'))
+                ->andReturn('https://billing.stripe.com/p/session_test_1');
+        });
+
+        $response = $this
+            ->actingAs($owner)
+            ->post(route('profile.subscription-portal'));
+
+        $response->assertRedirect('https://billing.stripe.com/p/session_test_1');
+    }
+
+    public function test_agent_cannot_open_subscription_portal(): void
+    {
+        $agent = User::factory()->create(['role' => 'agent']);
+
+        $response = $this
+            ->actingAs($agent)
+            ->post(route('profile.subscription-portal'));
+
+        $response->assertForbidden();
     }
 
     public function test_profile_information_can_be_updated(): void

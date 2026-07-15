@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/email-test', [ProfileController::class, 'sendEmailTest'])->name('profile.email-test');
+    Route::post('/profile/subscription-portal', [ProfileController::class, 'manageSubscription'])->name('profile.subscription-portal');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

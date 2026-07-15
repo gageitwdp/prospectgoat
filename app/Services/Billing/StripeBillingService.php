@@ -5,7 +5,6 @@ namespace App\Services\Billing;
 use App\Models\Account;
 use App\Models\User;
 use RuntimeException;
-use Stripe\Exception\InvalidRequestException;
 use Stripe\StripeClient;
 
 class StripeBillingService
@@ -50,36 +49,29 @@ class StripeBillingService
         return $session->url;
     }
 
-    public function completeCheckoutSession(Account $account, string $sessionId): void
+    public function canOpenCustomerPortal(Account $account): bool
     {
-        $this->guardConfigured();
+        return class_exists(StripeClient::class)
+            && filled(config('services.stripe.secret'))
+            && filled($account->stripe_customer_id);
+    }
 
-        try {
-            $session = $this->client()->checkout->sessions->retrieve($sessionId, []);
-        } catch (InvalidRequestException $exception) {
-            throw new RuntimeException('Stripe checkout session could not be found. Please try checkout again.', previous: $exception);
+    public function createCustomerPortalSession(Account $account, string $returnUrl): string
+    {
+        if (! $this->canOpenCustomerPortal($account)) {
+            throw new RuntimeException('Stripe customer portal is not available for this account.');
         }
 
-        $metadataAccountId = (int) ($session->metadata->account_id ?? 0);
+        $session = $this->client()->billingPortal->sessions->create([
+            'customer' => $account->stripe_customer_id,
+            'return_url' => $returnUrl,
+        ]);
 
-        if ($metadataAccountId > 0 && $metadataAccountId !== (int) $account->id) {
-            throw new RuntimeException('Stripe checkout session does not belong to this account.');
+        if (! is_string($session->url) || $session->url === '') {
+            throw new RuntimeException('Stripe did not return a customer portal URL.');
         }
 
-        $customerId = is_string($session->customer) ? $session->customer : null;
-        $subscriptionId = is_string($session->subscription) ? $session->subscription : null;
-
-        if ($session->status !== 'complete' || ! $customerId || ! $subscriptionId) {
-            throw new RuntimeException('Stripe checkout is not complete yet.');
-        }
-
-        $subscription = $this->client()->subscriptions->retrieve($subscriptionId, []);
-
-        $account->forceFill([
-            'stripe_customer_id' => $customerId,
-            'stripe_subscription_id' => $subscriptionId,
-            'billing_status' => $this->mapBillingStatus($subscription->status),
-        ])->save();
+        return $session->url;
     }
 
     private function createCustomer(Account $account, User $user): string

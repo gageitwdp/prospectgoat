@@ -19,6 +19,14 @@
                 </div>
             </div>
 
+            @if ($canManageSubscription)
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl">
+                        @include('profile.partials.subscription-management-form')
+                    </div>
+                </div>
+            @endif
+
             @if ($user->isGlobalAdmin())
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-6xl">

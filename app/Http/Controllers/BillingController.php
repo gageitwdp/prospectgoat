@@ -73,10 +73,8 @@ class BillingController extends Controller
                 ->with('status', 'Billing session was not returned correctly. Please try checkout again.');
         }
 
-        $this->billing->completeCheckoutSession($account, $sessionId);
-
         return redirect()
             ->route('dashboard')
-            ->with('status', 'Billing setup complete.');
+            ->with('status', 'Billing confirmation received. Access will update once Stripe finalizes your payment.');
     }
 }

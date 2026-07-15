@@ -61,20 +61,22 @@ class BillingOnboardingTest extends TestCase
         $response->assertRedirect('https://checkout.stripe.com/test-session');
     }
 
-    public function test_success_marks_account_active_and_redirects_to_dashboard(): void
+    public function test_success_redirects_to_dashboard_and_defers_activation_to_webhook(): void
     {
         $user = User::factory()->create();
         $user->account()->update(['billing_status' => Account::BILLING_STATUS_PENDING]);
 
-        $this->mock(StripeBillingService::class, function ($mock) use ($user): void {
-            $mock->shouldReceive('completeCheckoutSession')
-                ->once()
-                ->withArgs(fn (Account $account, string $sessionId) => $account->is($user->account) && $sessionId === 'cs_test_123');
+        $this->mock(StripeBillingService::class, function ($mock): void {
+            $mock->shouldNotReceive('completeCheckoutSession');
         });
 
         $response = $this->actingAs($user)->get(route('billing.success', ['session_id' => 'cs_test_123']));
 
         $response->assertRedirect(route('dashboard'));
-        $response->assertSessionHas('status', 'Billing setup complete.');
+        $response->assertSessionHas('status', 'Billing confirmation received. Access will update once Stripe finalizes your payment.');
+        $this->assertDatabaseHas('accounts', [
+            'id' => $user->account->id,
+            'billing_status' => Account::BILLING_STATUS_PENDING,
+        ]);
     }
 }

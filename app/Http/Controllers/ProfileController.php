@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\AdminEmailTestMail;
 use App\Models\Account;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Billing\StripeBillingService;
 use App\Services\Billing\GlobalAdminBillingOverviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,10 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function __construct(private readonly GlobalAdminBillingOverviewService $billingOverview) {}
+    public function __construct(
+        private readonly GlobalAdminBillingOverviewService $billingOverview,
+        private readonly StripeBillingService $billing,
+    ) {}
 
     /**
      * Display the user's profile form.
@@ -24,6 +28,7 @@ class ProfileController extends Controller
     {
         $data = [
             'user' => $request->user(),
+            'canManageSubscription' => $this->canManageSubscription($request),
         ];
 
         if ($request->user()?->isGlobalAdmin()) {
@@ -36,6 +41,28 @@ class ProfileController extends Controller
         }
 
         return view('profile.edit', $data);
+    }
+
+    public function manageSubscription(Request $request): RedirectResponse
+    {
+        abort_unless($this->canManageSubscription($request), 403);
+
+        $account = $request->user()?->account;
+
+        if (! $account || ! $this->billing->canOpenCustomerPortal($account)) {
+            return Redirect::route('profile.edit')->with('subscription_status', 'Subscription portal is not available yet for this account.');
+        }
+
+        try {
+            $portalUrl = $this->billing->createCustomerPortalSession(
+                $account,
+                route('profile.edit'),
+            );
+        } catch (\Throwable $exception) {
+            return Redirect::route('profile.edit')->with('subscription_status', 'Unable to open subscription portal right now. Please try again.');
+        }
+
+        return redirect()->away($portalUrl);
     }
 
     /**
@@ -102,5 +129,14 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    private function canManageSubscription(Request $request): bool
+    {
+        $user = $request->user();
+
+        return (bool) ($user
+            && ! $user->isGlobalAdmin()
+            && in_array($user->role, ['owner', 'admin'], true));
     }
 }

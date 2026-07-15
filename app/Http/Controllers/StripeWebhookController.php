@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessStripeWebhookPayloadJob;
 use App\Services\Billing\StripeWebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,11 +16,13 @@ class StripeWebhookController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
+        $payload = $request->getContent();
+        $signature = (string) $request->header('Stripe-Signature', '');
+
         try {
-            $this->webhooks->handleSignedPayload(
-                $request->getContent(),
-                (string) $request->header('Stripe-Signature', ''),
-            );
+            $this->webhooks->assertValidSignature($payload, $signature);
+
+            ProcessStripeWebhookPayloadJob::dispatch($payload, $signature);
 
             return response()->json(['received' => true]);
         } catch (SignatureVerificationException|UnexpectedValueException $exception) {

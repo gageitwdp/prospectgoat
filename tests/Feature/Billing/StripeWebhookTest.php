@@ -2,13 +2,52 @@
 
 namespace Tests\Feature\Billing;
 
+use App\Jobs\ProcessStripeWebhookPayloadJob;
 use App\Models\Account;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Tests\TestCase;
 
 class StripeWebhookTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_valid_webhook_dispatches_processing_job(): void
+    {
+        config(['services.stripe.webhook_secret' => 'whsec_test']);
+        Bus::fake();
+
+        $payload = json_encode([
+            'id' => 'evt_dispatch_1',
+            'type' => 'checkout.session.completed',
+            'data' => [
+                'object' => [
+                    'id' => 'cs_dispatch_1',
+                    'customer' => 'cus_dispatch_1',
+                    'subscription' => 'sub_dispatch_1',
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $signature = $this->signedHeader($payload, 'whsec_test');
+
+        $response = $this->call(
+            'POST',
+            route('stripe.webhook'),
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_STRIPE_SIGNATURE' => $signature,
+            ],
+            $payload,
+        );
+
+        $response->assertOk();
+
+        Bus::assertDispatched(ProcessStripeWebhookPayloadJob::class);
+    }
 
     public function test_checkout_session_completed_webhook_syncs_stripe_ids_without_forcing_active_status(): void
     {
@@ -230,6 +269,7 @@ class StripeWebhookTest extends TestCase
     public function test_invalid_webhook_signature_returns_bad_request(): void
     {
         config(['services.stripe.webhook_secret' => 'whsec_test']);
+        Bus::fake();
 
         $payload = json_encode([
             'id' => 'evt_bad_sig',
@@ -255,6 +295,7 @@ class StripeWebhookTest extends TestCase
         );
 
         $response->assertStatus(400);
+        Bus::assertNotDispatched(ProcessStripeWebhookPayloadJob::class);
     }
 
     private function signedHeader(string $payload, string $secret): string

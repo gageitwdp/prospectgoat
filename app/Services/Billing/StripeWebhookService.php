@@ -6,21 +6,21 @@ use App\Models\Account;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Stripe\Event;
 use Stripe\StripeObject;
 use Stripe\Webhook;
 use Throwable;
 
 class StripeWebhookService
 {
+    public function assertValidSignature(string $payload, string $signature): void
+    {
+        $this->constructVerifiedEvent($payload, $signature);
+    }
+
     public function handleSignedPayload(string $payload, string $signature): void
     {
-        $this->guardConfigured();
-
-        $event = Webhook::constructEvent(
-            $payload,
-            $signature,
-            (string) config('services.stripe.webhook_secret'),
-        );
+        $event = $this->constructVerifiedEvent($payload, $signature);
 
         $eventId = (string) ($event->id ?? '');
         $eventType = (string) ($event->type ?? 'unknown');
@@ -41,6 +41,17 @@ class StripeWebhookService
 
             throw $exception;
         }
+    }
+
+    private function constructVerifiedEvent(string $payload, string $signature): Event
+    {
+        $this->guardConfigured();
+
+        return Webhook::constructEvent(
+            $payload,
+            $signature,
+            (string) config('services.stripe.webhook_secret'),
+        );
     }
 
     private function processEvent(string $eventType, string $eventId, mixed $object): void

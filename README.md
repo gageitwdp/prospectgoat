@@ -1,4 +1,4 @@
-# lezinproperties
+# Prospect Goat
 lezin properties portal
 
 ## One-shot Laravel deploy script
@@ -9,12 +9,12 @@ This repository includes a helper script for shared hosting deployments:
 
 ### What it does
 
-- Creates a Laravel project in `~/domains/portal.lezinproperties.com/lezinproperties` if empty
+- Creates a Laravel project in `~/domains/portal.Prospect Goat.com/Prospect Goat` if empty
 - Or runs `composer install` if Laravel already exists
 - Creates `.env` and generates app key
 - Defaults deployment behavior to development mode (`APP_ENV=development`, `APP_DEBUG=true`)
 - Sets writable permissions on `storage` and `bootstrap/cache`
-- Publishes `public/` into `~/domains/portal.lezinproperties.com/public_html` (copy mode) or symlinks web root
+- Publishes `public/` into `~/domains/portal.Prospect Goat.com/public_html` (copy mode) or symlinks web root
 - Optionally runs migrations, `storage:link`, and environment-aware optimization commands
 
 ### Usage
@@ -26,8 +26,8 @@ chmod +x deploy-laravel-shared-hosting.sh
 
 The script defaults already target:
 
-- `~/domains/portal.lezinproperties.com/lezinproperties` as app dir
-- `~/domains/portal.lezinproperties.com/public_html` as web dir
+- `~/domains/portal.Prospect Goat.com/Prospect Goat` as app dir
+- `~/domains/portal.Prospect Goat.com/public_html` as web dir
 
 Production mode example:
 
@@ -70,16 +70,16 @@ Use a local or CI machine to build assets, then upload the generated `public/bui
 Local steps:
 
 ```bash
-cd /path/to/lezinproperties
+cd /path/to/Prospect Goat
 npm install
 npm run build
-rsync -avz public/build/ user@server:/home/u417948420/domains/portal.lezinproperties.com/lezinproperties/public/build/
+rsync -avz public/build/ user@server:/home/u417948420/domains/portal.Prospect Goat.com/Prospect Goat/public/build/
 ```
 
 Server deploy step:
 
 ```bash
-cd /home/u417948420/domains/portal.lezinproperties.com/lezinproperties
+cd /home/u417948420/domains/portal.Prospect Goat.com/Prospect Goat
 bash deploy-laravel-shared-hosting.sh --environment production --mode copy --force --skip-frontend-build
 ```
 

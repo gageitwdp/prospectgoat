@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\GlobalAccountOversightController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\LeadImportController;
 use App\Http\Controllers\Admin\ProspectingController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -34,6 +35,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
     Route::get('/billing/success', [BillingController::class, 'success'])->name('billing.success');
 });
+
+Route::post('/stripe/webhook', StripeWebhookController::class)
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('stripe.webhook');
 
 Route::get('/lead-intake', function () {
     return redirect()->route('leads.intake');

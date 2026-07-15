@@ -38,6 +38,7 @@ return [
     'stripe' => [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         'prices' => [
             'single_agent' => env('STRIPE_SINGLE_AGENT_PRICE_ID'),
         ],

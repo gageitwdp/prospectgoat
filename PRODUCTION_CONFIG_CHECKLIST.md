@@ -36,6 +36,9 @@ Use this checklist when preparing the Laravel app on your server.
 - Set `STRIPE_SECRET` to the live secret key for the correct Stripe account.
 - Set `STRIPE_KEY` if you later expose Stripe.js or hosted billing links in the frontend.
 - Set `STRIPE_SINGLE_AGENT_PRICE_ID` to the live recurring price for the Single Agent plan.
+- Set `STRIPE_WEBHOOK_SECRET` from the Stripe webhook endpoint configuration.
+- Configure Stripe webhook endpoint URL to `/stripe/webhook` on your production domain.
+- Subscribe webhook endpoint to at least these events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`.
 - Complete one end-to-end signup in production and confirm the user is sent to Stripe Checkout after registration.
 - Confirm the account record stores `stripe_customer_id`, `stripe_subscription_id`, and an `active` or `trialing` billing status after successful checkout.
 

@@ -13,7 +13,7 @@ class ProspectingController extends Controller
 {
     private const DEFAULT_PHONE = '111-111-1111';
 
-    private const DEFAULT_EMAIL = 'default@lezinproperties.com';
+    private const DEFAULT_EMAIL = 'default@prospectgoat.com';
 
     /**
      * @var array<string, string>

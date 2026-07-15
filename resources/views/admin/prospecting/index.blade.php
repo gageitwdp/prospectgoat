@@ -98,31 +98,30 @@
                 </article>
             </section>
         </div>
+        <x-modal name="prospecting-phone-modal" maxWidth="md">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold lp-title">Add Phone Number</h3>
+                <p class="mt-2 text-sm lp-muted">Enter the phone number for this prospect card.</p>
+                <input type="text" class="mt-4 w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" x-model="modalPhone" placeholder="555-123-4567" />
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title hover:bg-[var(--lp-canvas)]" @click="$dispatch('close-modal', 'prospecting-phone-modal')">Cancel</button>
+                    <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" @click="applyPhone">Save Phone</button>
+                </div>
+            </div>
+        </x-modal>
+
+        <x-modal name="prospecting-email-modal" maxWidth="md">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold lp-title">Add Email</h3>
+                <p class="mt-2 text-sm lp-muted">Enter the email address for this prospect card.</p>
+                <input type="email" class="mt-4 w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" x-model="modalEmail" placeholder="name@example.com" />
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title hover:bg-[var(--lp-canvas)]" @click="$dispatch('close-modal', 'prospecting-email-modal')">Cancel</button>
+                    <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" @click="applyEmail">Save Email</button>
+                </div>
+            </div>
+        </x-modal>
     </div>
-
-    <x-modal name="prospecting-phone-modal" maxWidth="md">
-        <div class="p-6">
-            <h3 class="text-lg font-semibold lp-title">Add Phone Number</h3>
-            <p class="mt-2 text-sm lp-muted">Enter the phone number for this prospect card.</p>
-            <input type="text" class="mt-4 w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" x-model="modalPhone" placeholder="555-123-4567" />
-            <div class="mt-6 flex justify-end gap-2">
-                <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title hover:bg-[var(--lp-canvas)]" @click="$dispatch('close-modal', 'prospecting-phone-modal')">Cancel</button>
-                <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" @click="applyPhone">Save Phone</button>
-            </div>
-        </div>
-    </x-modal>
-
-    <x-modal name="prospecting-email-modal" maxWidth="md">
-        <div class="p-6">
-            <h3 class="text-lg font-semibold lp-title">Add Email</h3>
-            <p class="mt-2 text-sm lp-muted">Enter the email address for this prospect card.</p>
-            <input type="email" class="mt-4 w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" x-model="modalEmail" placeholder="name@example.com" />
-            <div class="mt-6 flex justify-end gap-2">
-                <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title hover:bg-[var(--lp-canvas)]" @click="$dispatch('close-modal', 'prospecting-email-modal')">Cancel</button>
-                <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" @click="applyEmail">Save Email</button>
-            </div>
-        </div>
-    </x-modal>
 
     <script>
         function prospectingTool() {

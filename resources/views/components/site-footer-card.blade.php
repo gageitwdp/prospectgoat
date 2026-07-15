@@ -1,7 +1,7 @@
 <footer class="lp-footer">
     <div class="lp-footer-center">
         <img
-            src="{{ asset('Prospect_GOAT_Logo_NOBG.png') }}"
+            src="{{ asset('Prospect_GOAT_Logo_NOBG.png') }}?v={{ filemtime(public_path('Prospect_GOAT_Logo_NOBG.png')) }}"
             alt="Prospect GOAT"
             class="lp-footer-logo lp-footer-logo-main"
         />

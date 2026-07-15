@@ -5,6 +5,7 @@ namespace App\Services\Billing;
 use App\Models\Account;
 use App\Models\User;
 use RuntimeException;
+use Stripe\Exception\InvalidRequestException;
 use Stripe\StripeClient;
 
 class StripeBillingService
@@ -38,7 +39,7 @@ class StripeBillingService
                 'user_id' => (string) $user->id,
                 'service_level' => $account->service_level,
             ],
-            'success_url' => route('billing.success', ['session_id' => '{CHECKOUT_SESSION_ID}']),
+            'success_url' => route('billing.success').'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('billing.collect', ['canceled' => 1]),
         ]);
 
@@ -53,7 +54,12 @@ class StripeBillingService
     {
         $this->guardConfigured();
 
-        $session = $this->client()->checkout->sessions->retrieve($sessionId, []);
+        try {
+            $session = $this->client()->checkout->sessions->retrieve($sessionId, []);
+        } catch (InvalidRequestException $exception) {
+            throw new RuntimeException('Stripe checkout session could not be found. Please try checkout again.', previous: $exception);
+        }
+
         $metadataAccountId = (int) ($session->metadata->account_id ?? 0);
 
         if ($metadataAccountId > 0 && $metadataAccountId !== (int) $account->id) {

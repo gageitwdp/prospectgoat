@@ -67,6 +67,12 @@ class BillingController extends Controller
 
         abort_unless($sessionId !== '', 404);
 
+        if (str_contains($sessionId, 'CHECKOUT_SESSION_ID')) {
+            return redirect()
+                ->route('billing.collect')
+                ->with('status', 'Billing session was not returned correctly. Please try checkout again.');
+        }
+
         $this->billing->completeCheckoutSession($account, $sessionId);
 
         return redirect()

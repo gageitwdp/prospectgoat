@@ -15,7 +15,13 @@ class EnsureAccountBillingIsActive
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $account = $request->user()?->account;
+        $user = $request->user();
+
+        if ($user?->isGlobalAdmin()) {
+            return $next($request);
+        }
+
+        $account = $user?->account;
 
         if ($account && $account->requiresBillingSetup()) {
             return redirect()->route('billing.collect');

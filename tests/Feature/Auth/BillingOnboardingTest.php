@@ -22,6 +22,16 @@ class BillingOnboardingTest extends TestCase
         $response->assertRedirect(route('billing.collect'));
     }
 
+    public function test_global_admin_is_not_redirected_to_billing_when_account_is_pending(): void
+    {
+        $user = User::factory()->create(['role' => 'global_admin']);
+        $user->account()->update(['billing_status' => Account::BILLING_STATUS_PENDING]);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertRedirect(route('admin.dashboard'));
+    }
+
     public function test_billing_screen_can_be_rendered_for_pending_account(): void
     {
         $user = User::factory()->create();

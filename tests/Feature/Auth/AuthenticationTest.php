@@ -57,6 +57,20 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('billing.collect', absolute: false));
     }
 
+    public function test_global_admin_bypasses_billing_after_login_even_when_account_is_pending(): void
+    {
+        $user = User::factory()->create(['role' => 'global_admin']);
+        $user->account()->update(['billing_status' => Account::BILLING_STATUS_PENDING]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

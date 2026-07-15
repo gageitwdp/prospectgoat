@@ -13,6 +13,10 @@ class BillingController extends Controller
 
     public function show(Request $request): View|RedirectResponse
     {
+        if ($request->user()?->isGlobalAdmin()) {
+            return redirect()->route('dashboard');
+        }
+
         $account = $request->user()?->account;
 
         if ($account?->hasActiveBilling()) {
@@ -28,6 +32,11 @@ class BillingController extends Controller
     public function checkout(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user?->isGlobalAdmin()) {
+            return redirect()->route('dashboard');
+        }
+
         $account = $user?->account;
 
         abort_unless($user && $account, 403);
@@ -45,6 +54,11 @@ class BillingController extends Controller
     public function success(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user?->isGlobalAdmin()) {
+            return redirect()->route('dashboard');
+        }
+
         $account = $user?->account;
 
         abort_unless($user && $account, 403);

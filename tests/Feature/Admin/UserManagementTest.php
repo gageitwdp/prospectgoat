@@ -270,4 +270,42 @@ class UserManagementTest extends TestCase
             'role' => 'global_admin',
         ]);
     }
+
+    public function test_non_global_admin_cannot_promote_user_to_global_admin_role(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $target = User::factory()->create(['role' => 'agent', 'account_id' => $admin->account_id]);
+
+        $response = $this->actingAs($admin)->put(route('admin.users.update', $target), [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'global_admin',
+            'password' => '',
+            'password_confirmation' => '',
+            'notify_on_new_lead_intake' => '1',
+            'notify_on_lead_assignment' => '0',
+        ]);
+
+        $response->assertSessionHasErrors('role');
+        $this->assertSame('agent', $target->fresh()->role);
+    }
+
+    public function test_global_admin_can_promote_user_to_global_admin_role(): void
+    {
+        $globalAdmin = User::factory()->create(['role' => 'global_admin']);
+        $target = User::factory()->create(['role' => 'agent', 'account_id' => $globalAdmin->account_id]);
+
+        $response = $this->actingAs($globalAdmin)->put(route('admin.users.update', $target), [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'global_admin',
+            'password' => '',
+            'password_confirmation' => '',
+            'notify_on_new_lead_intake' => '1',
+            'notify_on_lead_assignment' => '1',
+        ]);
+
+        $response->assertRedirect(route('admin.users.index'));
+        $this->assertSame('global_admin', $target->fresh()->role);
+    }
 }

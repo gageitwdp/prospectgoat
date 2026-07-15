@@ -29,9 +29,11 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
-        $defaultRoute = $user?->account?->requiresBillingSetup()
+        $defaultRoute = $user?->isGlobalAdmin()
+            ? 'dashboard'
+            : ($user?->account?->requiresBillingSetup()
             ? 'billing.collect'
-            : 'dashboard';
+            : 'dashboard');
 
         return redirect()->intended(route($defaultRoute, absolute: false));
     }

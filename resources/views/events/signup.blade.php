@@ -5,13 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @php
-            $shareTitle = $event->name . ' - ' . config('app.name', 'Lezin Properties');
-            $shareDescription = 'Sign up for ' . $event->name . ' with Lezin Properties.';
+            $shareTitle = $event->name . ' - ' . config('app.name', 'ProspectGoat');
+            $shareDescription = 'Sign up for ' . $event->name . ' with ProspectGoat.';
         @endphp
 
         @include('partials.share-meta')
 
-        <title>Event Sign Up - {{ config('app.name', 'Lezin Properties') }}</title>
+        <title>Event Sign Up - {{ config('app.name', 'ProspectGoat') }}</title>
 
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])

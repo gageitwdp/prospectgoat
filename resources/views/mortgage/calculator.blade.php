@@ -5,13 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @php
-            $shareTitle = 'Mortgage Calculator - ' . config('app.name', 'Lezin Properties');
-            $shareDescription = 'Estimate your monthly payment with the Lezin Properties mortgage calculator.';
+            $shareTitle = 'Mortgage Calculator - ' . config('app.name', 'ProspectGoat');
+            $shareDescription = 'Estimate your monthly payment with the ProspectGoat mortgage calculator.';
         @endphp
 
         @include('partials.share-meta')
 
-        <title>Mortgage Calculator - {{ config('app.name', 'Lezin Properties') }}</title>
+        <title>Mortgage Calculator - {{ config('app.name', 'ProspectGoat') }}</title>
 
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -26,7 +26,7 @@
                         <h1 class="lp-title text-2xl font-semibold sm:text-3xl">Plan your monthly payment with confidence.</h1>
                         <p class="lp-muted text-sm sm:text-base">Explore your options, customize your selections, and receive a personalized estimate delivered straight to your inbox.</p>
                     </div>
-                    <a href="https://lezinproperties.com/" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary">
+                    <a href="https://prospectgoat.com/" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary">
                         Back Home
                     </a>
                 </div>

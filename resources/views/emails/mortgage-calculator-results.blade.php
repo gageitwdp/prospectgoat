@@ -9,7 +9,7 @@
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #d9dee5;border-radius:10px;overflow:hidden;">
         <tr>
             <td style="padding:28px 28px 18px;">
-                <p style="margin:0 0 12px;color:#5f6c7a;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;">Lezin Properties</p>
+                <p style="margin:0 0 12px;color:#5f6c7a;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;">ProspectGoat</p>
                 <h1 style="margin:0 0 12px;color:#1f2933;font-size:24px;line-height:1.2;">Mortgage Calculator Results</h1>
                 <p style="margin:0 0 16px;color:#17212b;font-size:15px;line-height:1.6;">Hi {{ $fullName }}, here are the results you requested.</p>
 

@@ -138,7 +138,7 @@ class EmailTemplateController extends Controller
             'first_name' => 'Taylor',
             'last_name' => 'Prospect',
             'full_name' => 'Taylor Prospect',
-            'phone_number' => config('app.lezin_contact_phone', '(470) 588-1505'),
+            'phone_number' => config('app.prospectgoat_contact_phone', '(470) 588-1505'),
             'email' => 'preview@example.com',
             'phone' => '(470) 555-1234',
             'lead_type' => str_replace('_', ' ', $lead->lead_type),

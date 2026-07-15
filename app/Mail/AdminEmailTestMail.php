@@ -24,7 +24,7 @@ class AdminEmailTestMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Lezin Properties Email Test',
+            subject: 'ProspectGoat Email Test',
         );
     }
 

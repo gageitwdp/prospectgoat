@@ -1,7 +1,7 @@
 <footer class="lp-footer">
     <!-- Branding -->
     <div class="lp-footer-center lp-footer-mb-30">
-        <h2 class="lp-footer-h2">Lezin Properties</h2>
+        <h2 class="lp-footer-h2">ProspectGoat</h2>
     </div>
 
     <!-- Contact Row -->
@@ -18,7 +18,7 @@
 
         <div>
             <h5>Email</h5>
-            <p><a href="mailto:hello@lezinproperties.com" class="lp-footer-link">hello@lezinproperties.com</a></p>
+            <p><a href="mailto:hello@prospectgoat.com" class="lp-footer-link">hello@prospectgoat.com</a></p>
         </div>
     </div>
 
@@ -28,7 +28,7 @@
         <p>722 Stonecroft Lane, Woodstock, GA 30188</p>
 
         <p class="lp-footer-small lp-footer-mt-10">
-            Lezin Properties is affiliated with Keller Williams Realty Partners.<br>
+            ProspectGoat is affiliated with Keller Williams Realty Partners.<br>
             Licensed Real Estate Services in Georgia.
         </p>
     </div>
@@ -40,19 +40,19 @@
             class="lp-footer-logo lp-footer-logo-main"
             loading="lazy"
             decoding="async"
-            onerror="this.onerror=null; this.src='https://lezinproperties.com/wp-content/uploads/2026/07/KellerWilliams_Realty_Partners_Logo_CMYK.jpg';">
+            onerror="this.onerror=null; this.src='https://prospectgoat.com/wp-content/uploads/2026/07/KellerWilliams_Realty_Partners_Logo_CMYK.jpg';">
 
         <img src="{{ asset('independent-operator.png') }}"
             alt="Each office independently owned and operated"
             class="lp-footer-logo lp-footer-logo-secondary"
             loading="lazy"
             decoding="async"
-            onerror="this.onerror=null; this.src='https://lezinproperties.com/wp-content/uploads/2026/07/independent-operator.png';">
+            onerror="this.onerror=null; this.src='https://prospectgoat.com/wp-content/uploads/2026/07/independent-operator.png';">
     </div>
 
     <!-- Copyright -->
     <div class="lp-footer-center lp-footer-small lp-footer-mt-30">
-        <p>Copyright &copy; {{ now()->year }} Lezin Properties. All Rights Reserved.</p>
+        <p>Copyright &copy; {{ now()->year }} ProspectGoat. All Rights Reserved.</p>
     </div>
 
 </footer>

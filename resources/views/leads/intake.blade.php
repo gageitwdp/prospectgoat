@@ -5,13 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @php
-            $shareTitle = 'New Inquiry - ' . config('app.name', 'Lezin Properties');
-            $shareDescription = 'Start a new inquiry with Lezin Properties.';
+            $shareTitle = 'New Inquiry - ' . config('app.name', 'ProspectGoat');
+            $shareDescription = 'Start a new inquiry with ProspectGoat.';
         @endphp
 
         @include('partials.share-meta')
 
-        <title>New Inquiry - {{ config('app.name', 'Lezin Properties') }}</title>
+        <title>New Inquiry - {{ config('app.name', 'ProspectGoat') }}</title>
 
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -33,7 +33,7 @@
                         <a href="{{ route('sellers.intake') }}" class="inline-flex items-center justify-center rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title">
                             Seller Intake
                         </a>
-                        <a href="https://lezinproperties.com/" class="inline-flex items-center justify-center rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title">
+                        <a href="https://prospectgoat.com/" class="inline-flex items-center justify-center rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title">
                             Home
                         </a>
                     </div>
@@ -114,7 +114,7 @@
                         <div class="sm:col-span-2" x-show="inquiryType === 'home_value'">
                             <label for="source" class="mb-1 block text-sm font-medium lp-title">How did you find us?</label>
                             <select id="source" name="source" x-model="source" class="w-full rounded-xl border border-[var(--lp-border)] bg-white px-4 py-2.5 text-sm">
-                                <option value="landing_page" @selected(old('source', 'landing_page') === 'landing_page')>LezinProperties.Com</option>
+                                <option value="landing_page" @selected(old('source', 'landing_page') === 'landing_page')>ProspectGoat.com</option>
                                 <option value="facebook" @selected(old('source') === 'facebook')>Facebook</option>
                                 <option value="instagram" @selected(old('source') === 'instagram')>Instagram</option>
                                 <option value="referral" @selected(old('source') === 'referral')>Referral</option>

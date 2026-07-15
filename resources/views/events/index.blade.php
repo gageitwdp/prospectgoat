@@ -5,13 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @php
-            $shareTitle = 'Events - ' . config('app.name', 'Lezin Properties');
-            $shareDescription = 'Browse upcoming Lezin Properties community events.';
+            $shareTitle = 'Events - ' . config('app.name', 'ProspectGoat');
+            $shareDescription = 'Browse upcoming ProspectGoat community events.';
         @endphp
 
         @include('partials.share-meta')
 
-        <title>Events - {{ config('app.name', 'Lezin Properties') }}</title>
+        <title>Events - {{ config('app.name', 'ProspectGoat') }}</title>
 
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -26,7 +26,7 @@
                         <h1 class="lp-title mt-2 text-2xl font-semibold sm:text-3xl">Join us at an upcoming event.</h1>
                         <p class="mt-2 text-sm lp-muted">Select any event card to open the sign up sheet.</p>
                     </div>
-                    <a href="https://lezinproperties.com/" class="inline-flex items-center justify-center rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title">
+                    <a href="https://prospectgoat.com/" class="inline-flex items-center justify-center rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title">
                         Home
                     </a>
                 </div>

@@ -120,7 +120,7 @@ CSV;
             'name' => 'George Bozocea',
             'address' => '4032 Wesley Chapel Rd, Marietta, GA 30062',
             'phone' => '111-111-1111',
-            'email' => 'default@lezinproperties.com',
+            'email' => 'default@prospectgoat.com',
             'lead_type' => 'generic_inquiry',
             'source' => 'homepage',
             'status' => 'new',

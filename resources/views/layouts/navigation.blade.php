@@ -8,7 +8,7 @@
     <div class="lp-shell">
         <div class="lp-card flex flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <a href="{{ $homeRoute }}" class="text-sm uppercase tracking-[0.25em] lp-muted">Lezin Properties</a>
+                <a href="{{ $homeRoute }}" class="text-sm uppercase tracking-[0.25em] lp-muted">ProspectGoat</a>
                 <p class="lp-title text-lg font-semibold">{{ $isAdmin ? 'Admin Portal' : 'Lead Management Portal' }}</p>
             </div>
 

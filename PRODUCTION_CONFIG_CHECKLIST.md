@@ -70,7 +70,7 @@ Use this checklist when preparing the Laravel app on your server.
 - Verify file upload/download behavior.
 - Verify email sending.
 - Verify required root-level public assets return HTTP 200:
-- `https://portal.lezinproperties.com/independent-operator.png`
-- `https://portal.lezinproperties.com/KellerWilliams_Realty_Partners_Logo_CMYK.jpg`
-- `https://portal.lezinproperties.com/lezin_properties_no_bg_full_logo.png`
+- `https://portal.prospectgoat.com/independent-operator.png`
+- `https://portal.prospectgoat.com/KellerWilliams_Realty_Partners_Logo_CMYK.jpg`
+- `https://portal.prospectgoat.com/favicon.ico`
 - Check logs for warnings/errors after first traffic.

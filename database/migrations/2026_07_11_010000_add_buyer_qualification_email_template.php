@@ -17,7 +17,7 @@ Hi {{first_name}},
 
 Thanks for completing your buyer profile — I received your timeline, budget, and search preferences.
 
-My name is Gage with Lezin Properties, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
+My name is Gage with ProspectGoat, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
 
 Here’s what happens next:
 • I’m reviewing your buyer details now
@@ -33,7 +33,7 @@ Looking forward to helping you out.
 
 — Gage
 
-Lezin Properties
+ProspectGoat
 {{phone_number}}
 BLADE,
                 'is_active' => true,

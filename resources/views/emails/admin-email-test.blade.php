@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lezin Properties Email Test</title>
+    <title>ProspectGoat Email Test</title>
 </head>
 <body style="margin:0;padding:24px;background:#f7f8fa;color:#17212b;font-family:Arial,sans-serif;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #d9dee5;border-radius:8px;">

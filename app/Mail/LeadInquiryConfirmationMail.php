@@ -64,7 +64,7 @@ class LeadInquiryConfirmationMail extends Mailable
             'first_name' => $firstName,
             'last_name' => $lastName,
             'full_name' => $fullName,
-            'phone_number' => config('app.lezin_contact_phone', '(470) 588-1505'),
+            'phone_number' => config('app.prospectgoat_contact_phone', '(470) 588-1505'),
             'email' => (string) $this->lead->email,
             'phone' => (string) $this->lead->phone,
             'lead_type' => str_replace('_', ' ', (string) $this->lead->lead_type),

@@ -19,7 +19,7 @@ sed -i 's/^APP_ENV=.*/APP_ENV=development/' .env
 sed -i 's/^APP_DEBUG=.*/APP_DEBUG=true/' .env
 
 # Optional but recommended if missing:
-grep -q '^APP_URL=' .env || echo 'APP_URL=https://portal.lezinproperties.com' >> .env
+grep -q '^APP_URL=' .env || echo 'APP_URL=https://portal.prospectgoat.com' >> .env
 
 # 7) Run DB migrations safely
 php artisan migrate --force

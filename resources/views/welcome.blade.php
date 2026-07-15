@@ -6,13 +6,13 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @php
             $shareUrl = url('/');
-            $shareTitle = config('app.name', 'Lezin Properties') . ' - Portal';
-            $shareDescription = 'Lezin Properties Portal for inquiries, events, and mortgage planning.';
+            $shareTitle = config('app.name', 'ProspectGoat') . ' - Portal';
+            $shareDescription = 'ProspectGoat Portal for inquiries, events, and mortgage planning.';
         @endphp
 
         @include('partials.share-meta')
 
-        <title>{{ config('app.name', 'Lezin Properties') }} - Portal</title>
+        <title>{{ config('app.name', 'ProspectGoat') }} - Portal</title>
 
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -23,11 +23,11 @@
             <section class="lp-card p-7 sm:p-10">
                 <div class="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
                     <div class="max-w-3xl space-y-4">
-                        <p class="text-xs uppercase tracking-[0.35em] lp-muted">Lezin Properties Portal</p>
+                        <p class="text-xs uppercase tracking-[0.35em] lp-muted">ProspectGoat Portal</p>
                         <h1 class="lp-title text-3xl font-semibold leading-tight sm:text-5xl">Defined by detail.</h1>
                         <p class="lp-muted text-base sm:text-lg">Providing clarity, accountability, and exceptional service every step of the way.</p>
                     </div>
-                    <a href="https://lezinproperties.com/" class="inline-flex items-center justify-center rounded-xl px-6 py-3 text-base font-medium lp-btn-primary w-full sm:w-auto">
+                    <a href="https://prospectgoat.com/" class="inline-flex items-center justify-center rounded-xl px-6 py-3 text-base font-medium lp-btn-primary w-full sm:w-auto">
                         Home
                     </a>
                 </div>

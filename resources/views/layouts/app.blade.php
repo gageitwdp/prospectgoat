@@ -6,13 +6,13 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @php
             $shareUrl = url()->current();
-            $shareTitle = config('app.name', 'Lezin Properties Portal');
-            $shareDescription = 'Lezin Properties internal portal dashboard.';
+            $shareTitle = config('app.name', 'ProspectGoat Portal');
+            $shareDescription = 'ProspectGoat internal portal dashboard.';
         @endphp
 
         @include('partials.share-meta')
 
-        <title>{{ config('app.name', 'Lezin Properties Portal') }}</title>
+        <title>{{ config('app.name', 'ProspectGoat Portal') }}</title>
 
         <!-- Scripts -->
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))

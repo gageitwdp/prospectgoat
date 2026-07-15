@@ -6,13 +6,13 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @php
             $shareUrl = url()->current();
-            $shareTitle = config('app.name', 'Lezin Properties Portal');
-            $shareDescription = 'Secure access for the Lezin Properties portal.';
+            $shareTitle = config('app.name', 'ProspectGoat Portal');
+            $shareDescription = 'Secure access for the ProspectGoat portal.';
         @endphp
 
         @include('partials.share-meta')
 
-        <title>{{ config('app.name', 'Lezin Properties Portal') }}</title>
+        <title>{{ config('app.name', 'ProspectGoat Portal') }}</title>
 
         <!-- Scripts -->
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
@@ -23,7 +23,7 @@
         <div class="min-h-screen flex flex-col">
             <main class="flex-1 flex flex-col items-center justify-center p-6">
                 <div class="mb-6 text-center">
-                    <a href="/" class="text-xs uppercase tracking-[0.25em] lp-muted">Lezin Properties</a>
+                    <a href="/" class="text-xs uppercase tracking-[0.25em] lp-muted">ProspectGoat</a>
                     <p class="lp-title text-2xl font-semibold">Manager Access</p>
                 </div>
 

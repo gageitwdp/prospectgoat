@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         User::updateOrCreate(
-            ['email' => 'gage@lezinproperties.com'],
+            ['email' => 'gage@prospectgoat.com'],
             [
                 'name' => 'Gage',
                 'password' => Hash::make(env('ADMIN_SEED_PASSWORD', 'ChangeMe123!')),

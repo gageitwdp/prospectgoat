@@ -29,7 +29,7 @@ Hi {{first_name}},
 
 Thanks for reaching out — I just received your request and I’m already taking a look for you.
 
-My name is Gage with Lezin Properties, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
+My name is Gage with ProspectGoat, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
 
 Here’s what happens next:
 • I’m reviewing your request now
@@ -45,7 +45,7 @@ Looking forward to helping you out.
 
 — Gage
 
-Lezin Properties
+ProspectGoat
 {{phone_number}}
 BLADE,
             ],
@@ -58,7 +58,7 @@ Hi {{first_name}},
 
 Thanks for reaching out — I just received your buyer request and I’m already taking a look for you.
 
-My name is Gage with Lezin Properties, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
+My name is Gage with ProspectGoat, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
 
 Here’s what happens next:
 • I’m reviewing your request now
@@ -74,7 +74,7 @@ Looking forward to helping you out.
 
 — Gage
 
-Lezin Properties
+ProspectGoat
 {{phone_number}}
 BLADE,
             ],
@@ -87,7 +87,7 @@ Hi {{first_name}},
 
 Thanks for reaching out — I just received your seller request and I’m already taking a look for you.
 
-My name is Gage with Lezin Properties, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
+My name is Gage with ProspectGoat, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
 
 Here’s what happens next:
 • I’m reviewing your request now
@@ -103,7 +103,7 @@ Looking forward to helping you out.
 
 — Gage
 
-Lezin Properties
+ProspectGoat
 {{phone_number}}
 BLADE,
             ],
@@ -116,7 +116,7 @@ Hi {{first_name}},
 
 Thanks for reaching out — I just received your home value request and I’m already taking a look for you.
 
-My name is Gage with Lezin Properties, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
+My name is Gage with ProspectGoat, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
 
 Here’s what happens next:
 • I’m reviewing your request now
@@ -132,7 +132,7 @@ Looking forward to helping you out.
 
 — Gage
 
-Lezin Properties
+ProspectGoat
 {{phone_number}}
 BLADE,
             ],
@@ -145,7 +145,7 @@ Hi {{first_name}},
 
 Thanks for reaching out — I just received your request and I’m already taking a look for you.
 
-My name is Gage with Lezin Properties, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
+My name is Gage with ProspectGoat, and I help buyers and sellers here in the Woodstock / North Georgia area find the right opportunities without the pressure.
 
 Here’s what happens next:
 • I’m reviewing your request now
@@ -161,7 +161,7 @@ Looking forward to helping you out.
 
 — Gage
 
-Lezin Properties
+ProspectGoat
 {{phone_number}}
 BLADE,
             ],

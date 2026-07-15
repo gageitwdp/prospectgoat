@@ -55,6 +55,17 @@ body {
 	background: #16314f;
 }
 
+.lp-btn-secondary {
+	background: #fff;
+	color: var(--lp-secondary);
+	border: 1px solid var(--lp-border);
+}
+
+.lp-btn-secondary:hover {
+	background: #f8fafc;
+	border-color: var(--lp-secondary);
+}
+
 .lp-btn-accent {
 	background: var(--lp-accent);
 	color: var(--lp-primary);

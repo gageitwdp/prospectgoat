@@ -39,6 +39,12 @@
                 <div class="lp-card w-full max-w-md px-6 py-6">
                     {{ $slot }}
                 </div>
+
+                @isset($afterCard)
+                    <div class="mt-4 w-full max-w-md text-center">
+                        {{ $afterCard }}
+                    </div>
+                @endisset
             </main>
 
             @include('components.site-footer-card')

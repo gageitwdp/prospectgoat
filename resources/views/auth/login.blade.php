@@ -32,22 +32,24 @@
             </label>
         </div>
 
-        <div class="flex items-center justify-end mt-4">
+        <div class="mt-6 flex items-center justify-between gap-3">
             @if (config('auth.enable_public_signup'))
-                <a class="underline text-sm lp-muted hover:text-[var(--lp-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--lp-secondary)] me-3" href="{{ route('register') }}">
+                <a class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold lp-btn-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--lp-secondary)]" href="{{ route('register') }}">
                     {{ __('Create account') }}
                 </a>
             @endif
 
-            @if (Route::has('password.request'))
-                <a class="underline text-sm lp-muted hover:text-[var(--lp-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--lp-secondary)]" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3 lp-btn-primary">
+            <x-primary-button class="lp-btn-primary ms-auto">
                 {{ __('Log in') }}
             </x-primary-button>
         </div>
     </form>
+
+    <x-slot:afterCard>
+        @if (Route::has('password.request'))
+            <a class="text-sm lp-muted underline hover:text-[var(--lp-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--lp-secondary)]" href="{{ route('password.request') }}">
+                {{ __('Forgot your password?') }}
+            </a>
+        @endif
+    </x-slot:afterCard>
 </x-guest-layout>

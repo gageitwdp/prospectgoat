@@ -66,6 +66,16 @@ body {
 	border-color: var(--lp-secondary);
 }
 
+.lp-status-card {
+	margin-bottom: 16px;
+	padding: 12px 14px;
+	border-radius: 12px;
+	background: #eff6ff;
+	border: 1px solid #bfdbfe;
+	color: #1e3a5f;
+	font-size: 0.95rem;
+}
+
 .lp-btn-accent {
 	background: var(--lp-accent);
 	color: var(--lp-primary);

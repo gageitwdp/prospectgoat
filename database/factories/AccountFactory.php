@@ -30,4 +30,18 @@ class AccountFactory extends Factory
             'trial_ends_at' => null,
         ];
     }
+
+    public function activeBilling(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'billing_status' => Account::BILLING_STATUS_ACTIVE,
+        ]);
+    }
+
+    public function pendingBilling(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'billing_status' => Account::BILLING_STATUS_PENDING,
+        ]);
+    }
 }

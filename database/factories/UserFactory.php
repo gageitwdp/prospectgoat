@@ -26,7 +26,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'account_id' => fn () => Account::query()->value('id') ?? Account::factory()->create()->id,
+            'account_id' => fn () => Account::query()->value('id') ?? Account::factory()->activeBilling()->create()->id,
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),

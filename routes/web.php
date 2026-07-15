@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Admin\LeadImportController;
 use App\Http\Controllers\Admin\ProspectingController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -25,7 +26,13 @@ Route::get('/dashboard', function () {
     }
 
     return redirect()->route('manager.leads.index');
-})->middleware(['auth'])->name('dashboard');
+})->middleware(['auth', 'billing.active'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/billing', [BillingController::class, 'show'])->name('billing.collect');
+    Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::get('/billing/success', [BillingController::class, 'success'])->name('billing.success');
+});
 
 Route::get('/lead-intake', function () {
     return redirect()->route('leads.intake');
@@ -50,7 +57,7 @@ Route::post('/events/{slug}/signup', [EventController::class, 'storeSignup'])->n
 Route::get('/mortgage-calculator', [MortgageCalculatorController::class, 'index'])->name('mortgage.calculator');
 Route::post('/mortgage-calculator/send-results', [MortgageCalculatorController::class, 'sendResults'])->name('mortgage.calculator.send');
 
-Route::middleware(['auth', 'manager'])->prefix('manager')->name('manager.')->group(function () {
+Route::middleware(['auth', 'billing.active', 'manager'])->prefix('manager')->name('manager.')->group(function () {
     Route::get('/leads/pipeline', [LeadController::class, 'pipeline'])->name('leads.pipeline');
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::delete('/leads/bulk-destroy', [LeadController::class, 'bulkDestroy'])->middleware('admin')->name('leads.bulk-destroy');
@@ -67,7 +74,7 @@ Route::middleware(['auth', 'manager'])->prefix('manager')->name('manager.')->gro
     Route::patch('/leads/{lead}/tasks/{task}', [TaskController::class, 'update'])->name('leads.tasks.update');
 });
 
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/events', [AdminEventController::class, 'index'])->name('events.index');
     Route::get('/events/create', [AdminEventController::class, 'create'])->name('events.create');

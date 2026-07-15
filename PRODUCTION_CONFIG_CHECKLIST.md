@@ -31,39 +31,47 @@ Use this checklist when preparing the Laravel app on your server.
 - Set sender as a verified domain mailbox.
 - Send a test mail from the app.
 
-## 5. Files and permissions
+## 5. Stripe billing
+
+- Set `STRIPE_SECRET` to the live secret key for the correct Stripe account.
+- Set `STRIPE_KEY` if you later expose Stripe.js or hosted billing links in the frontend.
+- Set `STRIPE_SINGLE_AGENT_PRICE_ID` to the live recurring price for the Single Agent plan.
+- Complete one end-to-end signup in production and confirm the user is sent to Stripe Checkout after registration.
+- Confirm the account record stores `stripe_customer_id`, `stripe_subscription_id`, and an `active` or `trialing` billing status after successful checkout.
+
+## 6. Files and permissions
 
 - Ensure write access for `storage` and `bootstrap/cache`.
 - Run `php artisan storage:link` when public storage is needed.
 - Verify uploads are not publicly exposed outside intended paths.
 
-## 6. Performance and optimization
+## 7. Performance and optimization
 
 - Run config, route, and view cache commands.
 - Ensure Composer dependencies are installed with optimized autoloading.
 - If using queues, run a queue worker under a process manager.
 
-## 7. Security hardening
+## 8. Security hardening
 
 - Serve only the Laravel `public` directory from the web root.
 - Enforce HTTPS with redirect at web server level.
 - Add strict file permissions and avoid 777.
 - Rotate credentials if they were ever committed or shared.
 
-## 8. Scheduler and background jobs
+## 9. Scheduler and background jobs
 
 - Add cron entry to run scheduler every minute.
 - Confirm scheduled tasks run successfully.
 - Confirm queue workers auto-restart on deploy.
 
-## 9. Monitoring and backup
+## 10. Monitoring and backup
 
 - Configure error monitoring (for example Sentry).
 - Configure uptime and HTTP health checks.
 - Verify automated database and file backups.
 - Test restore process at least once.
 
-## 10. Post-deploy verification
+## 11. Post-deploy verification
 
 - Verify home page and key portal flows.
 - Verify login/logout/session behavior.

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Models\Account;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -40,6 +41,20 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_pending_billing_users_are_sent_to_billing_after_login(): void
+    {
+        $user = User::factory()->create();
+        $user->account()->update(['billing_status' => Account::BILLING_STATUS_PENDING]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('billing.collect', absolute: false));
     }
 
     public function test_users_can_logout(): void

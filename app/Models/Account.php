@@ -59,4 +59,17 @@ class Account extends Model
     {
         return $this->hasMany(Event::class);
     }
+
+    public function hasActiveBilling(): bool
+    {
+        return in_array($this->billing_status, [
+            self::BILLING_STATUS_ACTIVE,
+            self::BILLING_STATUS_TRIALING,
+        ], true);
+    }
+
+    public function requiresBillingSetup(): bool
+    {
+        return ! $this->hasActiveBilling();
+    }
 }

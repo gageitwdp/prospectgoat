@@ -11,6 +11,7 @@
             $heading = match (request()->route()?->getName()) {
                 'login' => 'Login',
                 'register' => 'Sign Up',
+                'billing.collect' => 'Complete Billing',
                 'password.request' => 'Forgot Password',
                 'password.reset' => 'Reset Password',
                 'password.confirm' => 'Confirm Password',

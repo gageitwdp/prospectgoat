@@ -28,7 +28,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = $request->user();
+        $defaultRoute = $user?->account?->requiresBillingSetup()
+            ? 'billing.collect'
+            : 'dashboard';
+
+        return redirect()->intended(route($defaultRoute, absolute: false));
     }
 
     /**

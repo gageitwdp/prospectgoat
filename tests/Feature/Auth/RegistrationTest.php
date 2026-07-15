@@ -49,7 +49,7 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'Password123!',
         ]);
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('billing.collect'));
         $this->assertAuthenticated();
 
         $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
@@ -75,7 +75,7 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'Password123!',
         ]);
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('billing.collect'));
 
         $user = User::query()->where('email', 'image-owner@example.com')->firstOrFail();
 
@@ -93,7 +93,7 @@ class RegistrationTest extends TestCase
             'service_level' => 'single_agent',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('billing.collect'));
 
         auth()->logout();
 
@@ -103,7 +103,7 @@ class RegistrationTest extends TestCase
             'service_level' => 'single_agent',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
-        ])->assertRedirect(route('dashboard'));
+        ])->assertRedirect(route('billing.collect'));
 
         $slugs = Account::query()->where('name', 'Gage Team')->pluck('slug');
 

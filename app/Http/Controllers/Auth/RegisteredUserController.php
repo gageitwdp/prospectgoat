@@ -86,6 +86,10 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        $redirectRoute = $user->account?->requiresBillingSetup()
+            ? 'billing.collect'
+            : 'dashboard';
+
+        return redirect(route($redirectRoute, absolute: false));
     }
 }

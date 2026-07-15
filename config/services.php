@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'prices' => [
+            'single_agent' => env('STRIPE_SINGLE_AGENT_PRICE_ID'),
+        ],
+    ],
+
 ];

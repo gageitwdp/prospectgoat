@@ -21,12 +21,13 @@ class StripeBillingService
         $this->guardConfigured();
 
         $customerId = $account->stripe_customer_id ?: $this->createCustomer($account, $user);
+        $trialDays = (int) config('services.stripe.trial_days', 0);
 
         if (! $account->stripe_customer_id) {
             $account->forceFill(['stripe_customer_id' => $customerId])->save();
         }
 
-        $session = $this->client()->checkout->sessions->create([
+        $sessionPayload = [
             'mode' => 'subscription',
             'customer' => $customerId,
             'line_items' => [[
@@ -40,7 +41,15 @@ class StripeBillingService
             ],
             'success_url' => route('billing.success').'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('billing.collect', ['canceled' => 1]),
-        ]);
+        ];
+
+        if ($trialDays > 0) {
+            $sessionPayload['subscription_data'] = [
+                'trial_period_days' => $trialDays,
+            ];
+        }
+
+        $session = $this->client()->checkout->sessions->create($sessionPayload);
 
         if (! is_string($session->url) || $session->url === '') {
             throw new RuntimeException('Stripe did not return a checkout URL.');

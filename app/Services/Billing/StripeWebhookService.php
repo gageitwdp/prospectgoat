@@ -3,6 +3,7 @@
 namespace App\Services\Billing;
 
 use App\Models\Account;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Stripe\StripeObject;
@@ -74,7 +75,6 @@ class StripeWebhookService
         $account->forceFill([
             'stripe_customer_id' => is_string($session->customer ?? null) ? $session->customer : $account->stripe_customer_id,
             'stripe_subscription_id' => is_string($session->subscription ?? null) ? $session->subscription : $account->stripe_subscription_id,
-            'billing_status' => Account::BILLING_STATUS_ACTIVE,
             'last_billing_sync_at' => now(),
             'last_billing_event_type' => $eventType,
             'last_billing_event_id' => $eventId,
@@ -97,10 +97,16 @@ class StripeWebhookService
             return;
         }
 
+        $trialEnd = $subscription->trial_end ?? null;
+        $trialEndsAt = is_numeric($trialEnd)
+            ? Carbon::createFromTimestamp((int) $trialEnd)
+            : null;
+
         $account->forceFill([
             'stripe_customer_id' => $customerId ?: $account->stripe_customer_id,
             'stripe_subscription_id' => $subscriptionId ?: $account->stripe_subscription_id,
             'billing_status' => $this->mapBillingStatus((string) ($subscription->status ?? '')),
+            'trial_ends_at' => $trialEndsAt,
             'last_billing_sync_at' => now(),
             'last_billing_event_type' => $eventType,
             'last_billing_event_id' => $eventId,

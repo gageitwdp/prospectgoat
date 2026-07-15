@@ -10,7 +10,7 @@ class StripeWebhookTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_checkout_session_completed_webhook_sets_account_active(): void
+    public function test_checkout_session_completed_webhook_syncs_stripe_ids_without_forcing_active_status(): void
     {
         config(['services.stripe.webhook_secret' => 'whsec_test']);
 
@@ -55,7 +55,7 @@ class StripeWebhookTest extends TestCase
             'id' => $account->id,
             'stripe_customer_id' => 'cus_test_1',
             'stripe_subscription_id' => 'sub_test_1',
-            'billing_status' => Account::BILLING_STATUS_ACTIVE,
+            'billing_status' => Account::BILLING_STATUS_PENDING,
             'last_billing_event_type' => 'checkout.session.completed',
             'last_billing_event_id' => 'evt_checkout_completed_1',
         ]);
@@ -63,6 +63,64 @@ class StripeWebhookTest extends TestCase
         $this->assertDatabaseHas('stripe_webhook_events', [
             'event_id' => 'evt_checkout_completed_1',
             'event_type' => 'checkout.session.completed',
+        ]);
+    }
+
+    public function test_subscription_updated_webhook_sets_trialing_status_and_trial_end_date(): void
+    {
+        config(['services.stripe.webhook_secret' => 'whsec_test']);
+
+        $account = Account::factory()->create([
+            'billing_status' => Account::BILLING_STATUS_PENDING,
+            'stripe_customer_id' => 'cus_trial_1',
+            'stripe_subscription_id' => 'sub_trial_1',
+            'trial_ends_at' => null,
+        ]);
+
+        $trialEnd = now()->addDays(7)->timestamp;
+
+        $payload = json_encode([
+            'id' => 'evt_sub_updated_1',
+            'type' => 'customer.subscription.updated',
+            'data' => [
+                'object' => [
+                    'id' => 'sub_trial_1',
+                    'customer' => 'cus_trial_1',
+                    'status' => 'trialing',
+                    'trial_end' => $trialEnd,
+                    'metadata' => [
+                        'account_id' => (string) $account->id,
+                    ],
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $signature = $this->signedHeader($payload, 'whsec_test');
+
+        $response = $this->call(
+            'POST',
+            route('stripe.webhook'),
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_STRIPE_SIGNATURE' => $signature,
+            ],
+            $payload,
+        );
+
+        $response->assertOk();
+
+        $freshAccount = $account->fresh();
+        $this->assertNotNull($freshAccount?->trial_ends_at);
+        $this->assertSame($trialEnd, $freshAccount?->trial_ends_at?->timestamp);
+
+        $this->assertDatabaseHas('accounts', [
+            'id' => $account->id,
+            'billing_status' => Account::BILLING_STATUS_TRIALING,
+            'last_billing_event_type' => 'customer.subscription.updated',
+            'last_billing_event_id' => 'evt_sub_updated_1',
         ]);
     }
 

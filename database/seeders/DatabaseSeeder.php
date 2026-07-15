@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Account;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -18,13 +19,23 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        $account = Account::firstOrCreate(
+            ['slug' => 'prospectgoat-default'],
+            [
+                'name' => 'ProspectGoat Default',
+                'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+                'billing_status' => Account::BILLING_STATUS_PENDING,
+            ]
+        );
+
         User::updateOrCreate(
             ['email' => 'gage@prospectgoat.com'],
             [
                 'name' => 'Gage',
                 'password' => Hash::make(env('ADMIN_SEED_PASSWORD', 'ChangeMe123!')),
                 'email_verified_at' => now(),
-                'role' => 'admin',
+                'account_id' => $account->id,
+                'role' => 'owner',
             ]
         );
 
@@ -34,6 +45,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Test User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
+                'account_id' => $account->id,
                 'role' => 'agent',
             ]
         );

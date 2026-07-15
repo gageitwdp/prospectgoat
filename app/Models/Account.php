@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable([
+    'name',
+    'slug',
+    'service_level',
+    'billing_status',
+    'stripe_customer_id',
+    'stripe_subscription_id',
+    'trial_ends_at',
+])]
+class Account extends Model
+{
+    public const SERVICE_LEVEL_SINGLE_AGENT = 'single_agent';
+
+    public const SERVICE_LEVEL_TEAM = 'team';
+
+    public const SERVICE_LEVEL_BROKERAGE = 'brokerage';
+
+    public const BILLING_STATUS_PENDING = 'pending';
+
+    public const BILLING_STATUS_ACTIVE = 'active';
+
+    public const BILLING_STATUS_PAST_DUE = 'past_due';
+
+    public const BILLING_STATUS_CANCELED = 'canceled';
+
+    public const BILLING_STATUS_TRIALING = 'trialing';
+
+    protected function casts(): array
+    {
+        return [
+            'trial_ends_at' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Lead::class);
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+}

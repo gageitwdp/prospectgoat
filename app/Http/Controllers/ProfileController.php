@@ -44,7 +44,7 @@ class ProfileController extends Controller
      */
     public function sendEmailTest(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->role === 'admin', 403);
+        abort_unless($request->user()->isOwner(), 403);
 
         $data = $request->validate([
             'email' => ['required', 'email'],

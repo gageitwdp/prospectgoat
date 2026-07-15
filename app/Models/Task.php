@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['lead_id', 'title', 'due_date', 'status'])]
+#[Fillable(['account_id', 'lead_id', 'title', 'due_date', 'status'])]
 class Task extends Model
 {
     public $timestamps = false;
@@ -21,5 +21,10 @@ class Task extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
     }
 }

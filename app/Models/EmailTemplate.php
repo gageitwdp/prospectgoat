@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
+    'account_id',
     'key',
     'name',
     'subject',
@@ -72,5 +74,10 @@ class EmailTemplate extends Model
             ->all();
 
         return strtr((string) $value, $replacements);
+    }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
     }
 }

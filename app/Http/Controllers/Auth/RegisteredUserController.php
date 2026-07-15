@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\Account;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -30,17 +33,45 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        $user = DB::transaction(function () use ($data): User {
+            $baseName = trim((string) $data['name']);
+            $slug = Str::slug($baseName);
+
+            if ($slug === '') {
+                $slug = 'account';
+            }
+
+            $candidateSlug = $slug;
+            $counter = 2;
+
+            while (Account::query()->where('slug', $candidateSlug)->exists()) {
+                $candidateSlug = $slug.'-'.$counter;
+                $counter++;
+            }
+
+            $account = Account::create([
+                'name' => $baseName,
+                'slug' => $candidateSlug,
+                'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+                'billing_status' => Account::BILLING_STATUS_PENDING,
+            ]);
+
+            return User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'account_id' => $account->id,
+                'role' => 'owner',
+                'notify_on_new_lead_intake' => true,
+                'notify_on_lead_assignment' => true,
+            ]);
+        });
 
         event(new Registered($user));
 

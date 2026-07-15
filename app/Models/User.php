@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -15,6 +16,7 @@ use Illuminate\Notifications\Notifiable;
     'name',
     'email',
     'password',
+    'account_id',
     'role',
     'notify_on_new_lead_intake',
     'notify_on_lead_assignment',
@@ -45,8 +47,33 @@ class User extends Authenticatable
         return $this->hasMany(Lead::class, 'assigned_to');
     }
 
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
+    }
+
+    public function isOwner(): bool
+    {
+        return in_array($this->role, ['owner', 'admin'], true);
+    }
+
+    public function isManagerRole(): bool
+    {
+        return $this->role === 'manager';
+    }
+
+    public function isAgent(): bool
+    {
+        return $this->role === 'agent';
+    }
+
+    public function canAccessManagerPortal(): bool
+    {
+        return in_array($this->role, ['owner', 'admin', 'manager', 'agent'], true);
+    }
+
     public function isManager(): bool
     {
-        return in_array($this->role, ['admin', 'agent'], true);
+        return $this->canAccessManagerPortal();
     }
 }

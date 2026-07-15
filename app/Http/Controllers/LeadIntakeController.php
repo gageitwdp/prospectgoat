@@ -113,11 +113,11 @@ class LeadIntakeController extends Controller
                 ->filter(function (User $user): bool {
                     $role = strtolower(trim((string) $user->role));
 
-                    if ($role === 'admin') {
+                    if (in_array($role, ['owner', 'admin'], true)) {
                         return true;
                     }
 
-                    if ($role === 'agent') {
+                    if (in_array($role, ['manager', 'agent'], true)) {
                         return (bool) $user->notify_on_new_lead_intake;
                     }
 
@@ -130,7 +130,7 @@ class LeadIntakeController extends Controller
             ]);
 
             $recipients = User::query()
-                ->whereIn('role', ['admin', 'agent'])
+                ->whereIn('role', ['owner', 'admin', 'manager', 'agent'])
                 ->whereNotNull('email')
                 ->get();
         }
@@ -245,11 +245,11 @@ class LeadIntakeController extends Controller
                 ->filter(function (User $user): bool {
                     $role = strtolower(trim((string) $user->role));
 
-                    if ($role === 'admin') {
+                    if (in_array($role, ['owner', 'admin'], true)) {
                         return true;
                     }
 
-                    if ($role === 'agent') {
+                    if (in_array($role, ['manager', 'agent'], true)) {
                         return (bool) $user->notify_on_new_lead_intake;
                     }
 
@@ -262,7 +262,7 @@ class LeadIntakeController extends Controller
             ]);
 
             $recipients = User::query()
-                ->whereIn('role', ['admin', 'agent'])
+                ->whereIn('role', ['owner', 'admin', 'manager', 'agent'])
                 ->whereNotNull('email')
                 ->get();
         }
@@ -358,11 +358,11 @@ class LeadIntakeController extends Controller
                 ->filter(function (User $user): bool {
                     $role = strtolower(trim((string) $user->role));
 
-                    if ($role === 'admin') {
+                    if (in_array($role, ['owner', 'admin'], true)) {
                         return true;
                     }
 
-                    if ($role === 'agent') {
+                    if (in_array($role, ['manager', 'agent'], true)) {
                         return (bool) $user->notify_on_new_lead_intake;
                     }
 
@@ -375,7 +375,7 @@ class LeadIntakeController extends Controller
             ]);
 
             $recipients = User::query()
-                ->whereIn('role', ['admin', 'agent'])
+                ->whereIn('role', ['owner', 'admin', 'manager', 'agent'])
                 ->whereNotNull('email')
                 ->get();
         }

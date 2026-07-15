@@ -20,7 +20,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/dashboard', function () {
-    if (auth()->user()?->role === 'admin') {
+    if (auth()->user()?->isOwner()) {
         return redirect()->route('admin.dashboard');
     }
 

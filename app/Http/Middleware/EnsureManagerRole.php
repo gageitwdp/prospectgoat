@@ -17,7 +17,7 @@ class EnsureManagerRole
     {
         $user = $request->user();
 
-        if (! $user || ! $user->isManager()) {
+        if (! $user || ! $user->canAccessManagerPortal()) {
             abort(403);
         }
 

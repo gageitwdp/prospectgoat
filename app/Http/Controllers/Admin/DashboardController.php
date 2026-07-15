@@ -13,7 +13,8 @@ class DashboardController extends Controller
     {
         $metrics = [
             'total_users' => User::query()->count(),
-            'admin_users' => User::query()->where('role', 'admin')->count(),
+            'admin_users' => User::query()->whereIn('role', ['owner', 'admin'])->count(),
+            'manager_users' => User::query()->where('role', 'manager')->count(),
             'agent_users' => User::query()->where('role', 'agent')->count(),
             'total_leads' => Lead::query()->count(),
         ];
@@ -27,7 +28,7 @@ class DashboardController extends Controller
             ],
             [
                 'name' => 'User Management',
-                'description' => 'Manage admin and agent access, profile details, and role assignments.',
+                'description' => 'Manage owner, manager, and agent access, profile details, and role assignments.',
                 'route' => route('admin.users.index'),
                 'status' => 'Live',
             ],

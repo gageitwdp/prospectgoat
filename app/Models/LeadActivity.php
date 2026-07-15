@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['lead_id', 'type', 'description'])]
+#[Fillable(['account_id', 'lead_id', 'type', 'description'])]
 class LeadActivity extends Model
 {
     const UPDATED_AT = null;
@@ -14,5 +14,10 @@ class LeadActivity extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
     }
 }

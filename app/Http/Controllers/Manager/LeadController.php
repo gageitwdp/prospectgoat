@@ -80,7 +80,7 @@ class LeadController extends Controller
             ->withQueryString();
 
         $managers = User::query()
-            ->whereIn('role', ['admin', 'agent'])
+            ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
 
@@ -96,7 +96,7 @@ class LeadController extends Controller
         ]);
 
         $managers = User::query()
-            ->whereIn('role', ['admin', 'agent'])
+            ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
 
@@ -165,7 +165,7 @@ class LeadController extends Controller
 
     public function destroy(Request $request, Lead $lead): RedirectResponse
     {
-        abort_unless($request->user()?->role === 'admin', 403);
+        abort_unless($request->user()?->isOwner(), 403);
 
         $lead->delete();
 
@@ -176,7 +176,7 @@ class LeadController extends Controller
 
     public function bulkDestroy(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->role === 'admin', 403);
+        abort_unless($request->user()?->isOwner(), 403);
 
         $data = $request->validate([
             'lead_ids' => ['required', 'array', 'min:1'],
@@ -199,7 +199,7 @@ class LeadController extends Controller
 
     public function restore(Request $request, int $leadId): RedirectResponse
     {
-        abort_unless($request->user()?->role === 'admin', 403);
+        abort_unless($request->user()?->isOwner(), 403);
 
         $lead = Lead::query()->withTrashed()->findOrFail($leadId);
 
@@ -218,7 +218,7 @@ class LeadController extends Controller
 
     public function bulkRestore(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->role === 'admin', 403);
+        abort_unless($request->user()?->isOwner(), 403);
 
         $data = $request->validate([
             'lead_ids' => ['required', 'array', 'min:1'],

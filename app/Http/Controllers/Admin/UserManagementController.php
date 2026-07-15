@@ -36,8 +36,8 @@ class UserManagementController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
-            'role' => ['required', 'in:owner,manager,agent'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+            'role' => ['required', 'in:owner,admin,manager,agent'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'notify_on_new_lead_intake' => ['sometimes', 'boolean'],
             'notify_on_lead_assignment' => ['sometimes', 'boolean'],
@@ -71,17 +71,17 @@ class UserManagementController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
-            'role' => ['required', 'in:owner,manager,agent'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'role' => ['required', 'in:owner,admin,manager,agent'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'notify_on_new_lead_intake' => ['sometimes', 'boolean'],
             'notify_on_lead_assignment' => ['sometimes', 'boolean'],
         ]);
 
-        if ($request->user()->id === $user->id && $data['role'] !== 'owner') {
+        if ($request->user()->id === $user->id && ! in_array($data['role'], ['owner', 'admin'], true)) {
             return redirect()
                 ->route('admin.users.edit', $user)
-                ->with('status', 'You cannot remove owner access from your own account.');
+                ->with('status', 'You cannot remove admin access from your own account.');
         }
 
         $updateData = [

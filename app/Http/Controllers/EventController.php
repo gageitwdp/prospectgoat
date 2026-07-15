@@ -25,7 +25,10 @@ class EventController extends Controller
         $accountId = $this->resolvePublicAccountId();
 
         $events = Event::query()
-            ->where('account_id', $accountId)
+            ->where(function ($query) use ($accountId) {
+                $query->where('account_id', $accountId)
+                    ->orWhereNull('account_id');
+            })
             ->where('status', 'published')
             ->where('event_time', '>=', now())
             ->orderBy('event_time')
@@ -39,7 +42,10 @@ class EventController extends Controller
         $accountId = $this->resolvePublicAccountId();
 
         $event = Event::query()
-            ->where('account_id', $accountId)
+            ->where(function ($query) use ($accountId) {
+                $query->where('account_id', $accountId)
+                    ->orWhereNull('account_id');
+            })
             ->where('slug', $slug)
             ->where('status', 'published')
             ->firstOrFail();
@@ -52,7 +58,10 @@ class EventController extends Controller
         $accountId = $this->resolvePublicAccountId();
 
         $event = Event::query()
-            ->where('account_id', $accountId)
+            ->where(function ($query) use ($accountId) {
+                $query->where('account_id', $accountId)
+                    ->orWhereNull('account_id');
+            })
             ->where('slug', $slug)
             ->where('status', 'published')
             ->firstOrFail();

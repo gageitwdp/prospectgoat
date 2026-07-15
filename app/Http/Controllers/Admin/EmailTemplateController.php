@@ -40,7 +40,8 @@ class EmailTemplateController extends Controller
 
     public function update(Request $request, EmailTemplate $emailTemplate): RedirectResponse
     {
-        abort_unless($emailTemplate->account_id === $this->requireCurrentAccountId(), 404);
+        $accountId = $this->resolveAccountIdFromRequest($request);
+        abort_unless($emailTemplate->account_id === null || $emailTemplate->account_id === $accountId, 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -63,7 +64,8 @@ class EmailTemplateController extends Controller
 
     public function test(Request $request, EmailTemplate $emailTemplate): RedirectResponse
     {
-        abort_unless($emailTemplate->account_id === $this->requireCurrentAccountId(), 404);
+        $accountId = $this->resolveAccountIdFromRequest($request);
+        abort_unless($emailTemplate->account_id === null || $emailTemplate->account_id === $accountId, 404);
 
         $data = $request->validate([
             'recipient_email' => ['required', 'email', 'max:255'],
@@ -73,7 +75,7 @@ class EmailTemplateController extends Controller
         ]);
 
         $lead = new Lead([
-            'account_id' => $this->requireCurrentAccountId(),
+            'account_id' => $accountId,
             'name' => $data['first_name'].' Test',
             'email' => $data['recipient_email'],
             'phone' => '(470) 588-1505',
@@ -242,5 +244,16 @@ class EmailTemplateController extends Controller
                 'preferred_contact_method',
             ],
         ];
+    }
+
+    private function resolveAccountIdFromRequest(Request $request): int
+    {
+        $accountId = $request->user()?->account_id;
+
+        if (is_numeric($accountId) && (int) $accountId > 0) {
+            return (int) $accountId;
+        }
+
+        return $this->requireCurrentAccountId();
     }
 }

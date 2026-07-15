@@ -65,7 +65,10 @@ class LeadImportController extends Controller
         $lines = [implode(',', $columns)];
 
         $leads = Lead::query()
-            ->where('account_id', $accountId)
+            ->where(function ($query) use ($accountId) {
+                $query->where('account_id', $accountId)
+                    ->orWhereNull('account_id');
+            })
             ->with('assignedManager')
             ->orderBy('id')
             ->get();

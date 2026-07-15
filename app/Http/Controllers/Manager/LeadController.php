@@ -22,7 +22,7 @@ class LeadController extends Controller
 
     private function ensureLeadInAccount(Lead $lead): void
     {
-        abort_unless($lead->account_id === $this->accountId(), 404);
+        abort_unless($lead->account_id === null || $lead->account_id === $this->accountId(), 404);
     }
 
     public function pipeline(Request $request): View
@@ -36,7 +36,10 @@ class LeadController extends Controller
         }
 
         $query = Lead::query()
-            ->where('account_id', $this->accountId())
+            ->where(function ($query) {
+                $query->where('account_id', $this->accountId())
+                    ->orWhereNull('account_id');
+            })
             ->with('assignedManager');
 
         if ($period !== 'all') {
@@ -75,7 +78,10 @@ class LeadController extends Controller
         $visibility = $request->string('visibility')->toString();
 
         $query = Lead::query()
-            ->where('account_id', $this->accountId())
+            ->where(function ($query) {
+                $query->where('account_id', $this->accountId())
+                    ->orWhereNull('account_id');
+            })
             ->with('assignedManager');
 
         if ($visibility === 'deleted') {
@@ -218,7 +224,10 @@ class LeadController extends Controller
 
         DB::transaction(function () use ($leadIds): void {
             Lead::query()
-                ->where('account_id', $this->accountId())
+                ->where(function ($query) {
+                    $query->where('account_id', $this->accountId())
+                        ->orWhereNull('account_id');
+                })
                 ->whereIn('id', $leadIds)
                 ->delete();
         });
@@ -233,7 +242,7 @@ class LeadController extends Controller
         abort_unless($request->user()?->isOwner(), 403);
 
         $lead = Lead::query()->withTrashed()->findOrFail($leadId);
-        abort_unless($lead->account_id === $this->accountId(), 404);
+        abort_unless($lead->account_id === null || $lead->account_id === $this->accountId(), 404);
 
         if (! $lead->trashed()) {
             return redirect()
@@ -264,7 +273,10 @@ class LeadController extends Controller
 
         $restored = Lead::query()
             ->onlyTrashed()
-            ->where('account_id', $this->accountId())
+            ->where(function ($query) {
+                $query->where('account_id', $this->accountId())
+                    ->orWhereNull('account_id');
+            })
             ->whereIn('id', $leadIds)
             ->restore();
 

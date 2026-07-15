@@ -30,7 +30,8 @@ class GlobalAdminBillingOverviewService
 
     public function isStripeConfigured(): bool
     {
-        return filled(config('services.stripe.secret'));
+        return class_exists(StripeClient::class)
+            && filled(config('services.stripe.secret'));
     }
 
     /**

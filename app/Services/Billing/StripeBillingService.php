@@ -11,7 +11,8 @@ class StripeBillingService
 {
     public function isConfigured(): bool
     {
-        return filled(config('services.stripe.secret'))
+        return class_exists(StripeClient::class)
+            && filled(config('services.stripe.secret'))
             && filled(config('services.stripe.prices.single_agent'));
     }
 
@@ -107,6 +108,10 @@ class StripeBillingService
     private function guardConfigured(): void
     {
         if (! $this->isConfigured()) {
+            if (! class_exists(StripeClient::class)) {
+                throw new RuntimeException('Stripe SDK is not installed. Run composer install/deploy to include stripe/stripe-php.');
+            }
+
             throw new RuntimeException('Stripe billing is not configured.');
         }
     }

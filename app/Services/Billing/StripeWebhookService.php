@@ -33,7 +33,7 @@ class StripeWebhookService
         }
 
         try {
-            $this->processEvent($eventType, $event->data?->object);
+            $this->processEvent($eventType, $eventId, $event->data?->object);
             $this->markProcessed($eventId);
         } catch (Throwable $exception) {
             $this->releaseReservation($eventId);
@@ -42,24 +42,24 @@ class StripeWebhookService
         }
     }
 
-    private function processEvent(string $eventType, mixed $object): void
+    private function processEvent(string $eventType, string $eventId, mixed $object): void
     {
         if (! $object instanceof StripeObject) {
             return;
         }
 
         match ($eventType) {
-            'checkout.session.completed' => $this->handleCheckoutSessionCompleted($object),
+            'checkout.session.completed' => $this->handleCheckoutSessionCompleted($object, $eventType, $eventId),
             'customer.subscription.created',
             'customer.subscription.updated',
-            'customer.subscription.deleted' => $this->handleSubscriptionUpdated($object),
-            'invoice.paid' => $this->handleInvoicePaid($object),
-            'invoice.payment_failed' => $this->handleInvoicePaymentFailed($object),
+            'customer.subscription.deleted' => $this->handleSubscriptionUpdated($object, $eventType, $eventId),
+            'invoice.paid' => $this->handleInvoicePaid($object, $eventType, $eventId),
+            'invoice.payment_failed' => $this->handleInvoicePaymentFailed($object, $eventType, $eventId),
             default => null,
         };
     }
 
-    private function handleCheckoutSessionCompleted(StripeObject $session): void
+    private function handleCheckoutSessionCompleted(StripeObject $session, string $eventType, string $eventId): void
     {
         $account = $this->resolveAccount(
             accountId: (int) ($session->metadata->account_id ?? 0),
@@ -75,10 +75,13 @@ class StripeWebhookService
             'stripe_customer_id' => is_string($session->customer ?? null) ? $session->customer : $account->stripe_customer_id,
             'stripe_subscription_id' => is_string($session->subscription ?? null) ? $session->subscription : $account->stripe_subscription_id,
             'billing_status' => Account::BILLING_STATUS_ACTIVE,
+            'last_billing_sync_at' => now(),
+            'last_billing_event_type' => $eventType,
+            'last_billing_event_id' => $eventId,
         ])->save();
     }
 
-    private function handleSubscriptionUpdated(StripeObject $subscription): void
+    private function handleSubscriptionUpdated(StripeObject $subscription, string $eventType, string $eventId): void
     {
         $subscriptionId = is_string($subscription->id ?? null) ? $subscription->id : null;
         $customerId = is_string($subscription->customer ?? null) ? $subscription->customer : null;
@@ -98,10 +101,13 @@ class StripeWebhookService
             'stripe_customer_id' => $customerId ?: $account->stripe_customer_id,
             'stripe_subscription_id' => $subscriptionId ?: $account->stripe_subscription_id,
             'billing_status' => $this->mapBillingStatus((string) ($subscription->status ?? '')),
+            'last_billing_sync_at' => now(),
+            'last_billing_event_type' => $eventType,
+            'last_billing_event_id' => $eventId,
         ])->save();
     }
 
-    private function handleInvoicePaid(StripeObject $invoice): void
+    private function handleInvoicePaid(StripeObject $invoice, string $eventType, string $eventId): void
     {
         $subscriptionId = is_string($invoice->subscription ?? null) ? $invoice->subscription : null;
         $customerId = is_string($invoice->customer ?? null) ? $invoice->customer : null;
@@ -120,10 +126,13 @@ class StripeWebhookService
             'stripe_customer_id' => $customerId ?: $account->stripe_customer_id,
             'stripe_subscription_id' => $subscriptionId ?: $account->stripe_subscription_id,
             'billing_status' => Account::BILLING_STATUS_ACTIVE,
+            'last_billing_sync_at' => now(),
+            'last_billing_event_type' => $eventType,
+            'last_billing_event_id' => $eventId,
         ])->save();
     }
 
-    private function handleInvoicePaymentFailed(StripeObject $invoice): void
+    private function handleInvoicePaymentFailed(StripeObject $invoice, string $eventType, string $eventId): void
     {
         $subscriptionId = is_string($invoice->subscription ?? null) ? $invoice->subscription : null;
         $customerId = is_string($invoice->customer ?? null) ? $invoice->customer : null;
@@ -142,6 +151,9 @@ class StripeWebhookService
             'stripe_customer_id' => $customerId ?: $account->stripe_customer_id,
             'stripe_subscription_id' => $subscriptionId ?: $account->stripe_subscription_id,
             'billing_status' => Account::BILLING_STATUS_PAST_DUE,
+            'last_billing_sync_at' => now(),
+            'last_billing_event_type' => $eventType,
+            'last_billing_event_id' => $eventId,
         ])->save();
     }
 

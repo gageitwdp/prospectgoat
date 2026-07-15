@@ -48,6 +48,9 @@ class GlobalAdminBillingOverviewService
             'users_count' => $account->users_count,
             'stripe_customer_id' => $account->stripe_customer_id,
             'stripe_subscription_id' => $account->stripe_subscription_id,
+            'last_billing_sync_at' => $account->last_billing_sync_at,
+            'last_billing_event_type' => $account->last_billing_event_type,
+            'last_billing_event_id' => $account->last_billing_event_id,
             'created_at' => $account->created_at,
             'payment_history' => $this->paymentHistoryForAccount($account, $isStripeConfigured),
         ];

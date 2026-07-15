@@ -56,7 +56,10 @@ class StripeWebhookTest extends TestCase
             'stripe_customer_id' => 'cus_test_1',
             'stripe_subscription_id' => 'sub_test_1',
             'billing_status' => Account::BILLING_STATUS_ACTIVE,
+            'last_billing_event_type' => 'checkout.session.completed',
+            'last_billing_event_id' => 'evt_checkout_completed_1',
         ]);
+        $this->assertNotNull($account->fresh()->last_billing_sync_at);
         $this->assertDatabaseHas('stripe_webhook_events', [
             'event_id' => 'evt_checkout_completed_1',
             'event_type' => 'checkout.session.completed',
@@ -104,7 +107,10 @@ class StripeWebhookTest extends TestCase
         $this->assertDatabaseHas('accounts', [
             'id' => $account->id,
             'billing_status' => Account::BILLING_STATUS_PAST_DUE,
+            'last_billing_event_type' => 'invoice.payment_failed',
+            'last_billing_event_id' => 'evt_invoice_failed_1',
         ]);
+        $this->assertNotNull($account->fresh()->last_billing_sync_at);
     }
 
     public function test_duplicate_webhook_event_is_processed_once(): void

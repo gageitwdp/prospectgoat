@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'stripe_customer_id',
     'stripe_subscription_id',
     'trial_ends_at',
+    'last_billing_sync_at',
+    'last_billing_event_type',
+    'last_billing_event_id',
 ])]
 class Account extends Model
 {
@@ -40,6 +43,7 @@ class Account extends Model
     {
         return [
             'trial_ends_at' => 'datetime',
+            'last_billing_sync_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

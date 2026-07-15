@@ -1,6 +1,10 @@
 <footer class="lp-footer">
     <div class="lp-footer-center">
-        <p class="lp-footer-h2">Prospect GOAT</p>
+        <img
+            src="{{ asset('Prospect_GOAT_Logo_NOBG.png') }}"
+            alt="Prospect GOAT"
+            class="lp-footer-logo lp-footer-logo-main"
+        />
     </div>
 
     <div class="lp-footer-center lp-footer-small">

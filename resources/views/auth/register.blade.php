@@ -2,8 +2,26 @@
     <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
         @csrf
 
-        <!-- Name -->
+        <!-- Agent Photo -->
         <div>
+            <x-input-label for="profile_image" :value="__('Agent Photo (optional)')" />
+            <input id="profile_image" class="block mt-1 w-full text-sm" type="file" name="profile_image" accept="image/*" />
+            <x-input-error :messages="$errors->get('profile_image')" class="mt-2" />
+        </div>
+
+        <!-- Plan -->
+        <div class="mt-4">
+            <x-input-label for="service_level" :value="__('Plan')" />
+            <select id="service_level" name="service_level" class="block mt-1 w-full rounded-md border-[var(--lp-border)] shadow-sm focus:border-[var(--lp-secondary)] focus:ring-[var(--lp-secondary)]" required>
+                <option value="single_agent" @selected(old('service_level', 'single_agent') === 'single_agent')>Single Agent</option>
+                <option value="team" disabled>Team Plan (Coming Soon)</option>
+                <option value="brokerage" disabled>Brokerage Plan (Coming Soon)</option>
+            </select>
+            <x-input-error :messages="$errors->get('service_level')" class="mt-2" />
+        </div>
+
+        <!-- Name -->
+        <div class="mt-4">
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
@@ -14,13 +32,6 @@
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
-
-        <!-- Profile Image -->
-        <div class="mt-4">
-            <x-input-label for="profile_image" :value="__('Profile Image (optional)')" />
-            <input id="profile_image" class="block mt-1 w-full text-sm" type="file" name="profile_image" accept="image/*" />
-            <x-input-error :messages="$errors->get('profile_image')" class="mt-2" />
         </div>
 
         <!-- Password -->

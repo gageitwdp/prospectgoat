@@ -44,6 +44,7 @@ class RegistrationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Single Agent Owner',
             'email' => 'owner@example.com',
+            'service_level' => 'single_agent',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
         ]);
@@ -69,6 +70,7 @@ class RegistrationTest extends TestCase
             'name' => 'Image Owner',
             'email' => 'image-owner@example.com',
             'profile_image' => UploadedFile::fake()->create('avatar.jpg', 128, 'image/jpeg'),
+            'service_level' => 'single_agent',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
         ]);
@@ -88,6 +90,7 @@ class RegistrationTest extends TestCase
         $this->post('/register', [
             'name' => 'Gage Team',
             'email' => 'first@example.com',
+            'service_level' => 'single_agent',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
         ])->assertRedirect(route('dashboard'));
@@ -97,6 +100,7 @@ class RegistrationTest extends TestCase
         $this->post('/register', [
             'name' => 'Gage Team',
             'email' => 'second@example.com',
+            'service_level' => 'single_agent',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
         ])->assertRedirect(route('dashboard'));
@@ -105,5 +109,22 @@ class RegistrationTest extends TestCase
 
         $this->assertCount(2, $slugs);
         $this->assertNotSame($slugs->first(), $slugs->last());
+    }
+
+    public function test_signup_rejects_unavailable_team_and_brokerage_plans(): void
+    {
+        config(['auth.enable_public_signup' => true]);
+
+        $response = $this->from('/register')->post('/register', [
+            'name' => 'Team Attempt',
+            'email' => 'team-attempt@example.com',
+            'service_level' => 'team',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ]);
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors('service_level');
+        $this->assertDatabaseMissing('users', ['email' => 'team-attempt@example.com']);
     }
 }

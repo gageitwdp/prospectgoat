@@ -41,6 +41,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'profile_image' => ['nullable', 'image', 'max:2048'],
+            'service_level' => ['required', 'in:single_agent'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -65,7 +66,7 @@ class RegisteredUserController extends Controller
             $account = Account::create([
                 'name' => $baseName,
                 'slug' => $candidateSlug,
-                'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+                'service_level' => $data['service_level'],
                 'billing_status' => Account::BILLING_STATUS_PENDING,
             ]);
 

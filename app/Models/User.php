@@ -15,6 +15,7 @@ use Illuminate\Notifications\Notifiable;
 #[Fillable([
     'name',
     'email',
+    'profile_image_path',
     'password',
     'account_id',
     'role',

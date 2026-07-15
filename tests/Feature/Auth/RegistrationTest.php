@@ -5,6 +5,8 @@ namespace Tests\Feature\Auth;
 use App\Models\Account;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -56,6 +58,27 @@ class RegistrationTest extends TestCase
         $this->assertSame(Account::SERVICE_LEVEL_SINGLE_AGENT, $account->service_level);
         $this->assertSame(Account::BILLING_STATUS_PENDING, $account->billing_status);
         $this->assertNotEmpty($account->slug);
+    }
+
+    public function test_guest_can_upload_profile_image_during_signup(): void
+    {
+        config(['auth.enable_public_signup' => true]);
+        Storage::fake('public');
+
+        $response = $this->post('/register', [
+            'name' => 'Image Owner',
+            'email' => 'image-owner@example.com',
+            'profile_image' => UploadedFile::fake()->create('avatar.jpg', 128, 'image/jpeg'),
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ]);
+
+        $response->assertRedirect(route('dashboard'));
+
+        $user = User::query()->where('email', 'image-owner@example.com')->firstOrFail();
+
+        $this->assertNotNull($user->profile_image_path);
+        Storage::disk('public')->assertExists($user->profile_image_path);
     }
 
     public function test_public_signup_creates_unique_account_slug_for_same_name(): void

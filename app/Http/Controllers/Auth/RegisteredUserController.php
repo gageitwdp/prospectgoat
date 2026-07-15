@@ -40,10 +40,13 @@ class RegisteredUserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'profile_image' => ['nullable', 'image', 'max:2048'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = DB::transaction(function () use ($data): User {
+        $profileImagePath = $request->file('profile_image')?->store('profile-images', 'public');
+
+        $user = DB::transaction(function () use ($data, $profileImagePath): User {
             $baseName = trim((string) $data['name']);
             $slug = Str::slug($baseName);
 
@@ -69,6 +72,7 @@ class RegisteredUserController extends Controller
             return User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
+                'profile_image_path' => $profileImagePath,
                 'password' => Hash::make($data['password']),
                 'account_id' => $account->id,
                 'role' => 'owner',

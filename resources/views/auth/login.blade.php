@@ -33,6 +33,12 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
+            @if (config('auth.enable_public_signup'))
+                <a class="underline text-sm lp-muted hover:text-[var(--lp-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--lp-secondary)] me-3" href="{{ route('register') }}">
+                    {{ __('Create account') }}
+                </a>
+            @endif
+
             @if (Route::has('password.request'))
                 <a class="underline text-sm lp-muted hover:text-[var(--lp-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--lp-secondary)]" href="{{ route('password.request') }}">
                     {{ __('Forgot your password?') }}

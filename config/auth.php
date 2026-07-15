@@ -6,6 +6,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Signup
+    |--------------------------------------------------------------------------
+    |
+    | Enable this only when you want guests to create new single-agent accounts
+    | through the public registration form.
+    |
+    */
+
+    'enable_public_signup' => env('ENABLE_PUBLIC_SIGNUP', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Defaults
     |--------------------------------------------------------------------------
     |

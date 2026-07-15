@@ -10,13 +10,35 @@ abstract class Controller
 {
     protected function requireCurrentAccountId(): int
     {
-        $accountId = auth()->user()?->account_id;
+        $user = auth()->user();
+        $accountId = $user?->account_id;
 
-        if (! is_numeric($accountId) || (int) $accountId <= 0) {
-            throw new HttpException(403, 'Account context is required.');
+        if (is_numeric($accountId) && (int) $accountId > 0) {
+            return (int) $accountId;
         }
 
-        return (int) $accountId;
+        if ($user) {
+            $fallbackAccountId = Account::query()->orderBy('id')->value('id');
+
+            if (! is_numeric($fallbackAccountId) || (int) $fallbackAccountId <= 0) {
+                $slug = 'default-account-'.Str::lower(Str::random(8));
+
+                $account = Account::query()->create([
+                    'name' => 'Default Account',
+                    'slug' => $slug,
+                    'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+                    'billing_status' => Account::BILLING_STATUS_PENDING,
+                ]);
+
+                $fallbackAccountId = $account->id;
+            }
+
+            $user->forceFill(['account_id' => (int) $fallbackAccountId])->save();
+
+            return (int) $fallbackAccountId;
+        }
+
+        throw new HttpException(403, 'Account context is required.');
     }
 
     protected function resolvePublicAccountId(): int

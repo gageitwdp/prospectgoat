@@ -19,6 +19,14 @@
                 </div>
             </div>
 
+            @if ($user->isGlobalAdmin())
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-6xl">
+                        @include('profile.partials.global-admin-account-overview')
+                    </div>
+                </div>
+            @endif
+
             @if ($user->role === 'admin')
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl">

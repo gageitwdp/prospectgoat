@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\AdminEmailTestMail;
+use App\Models\Account;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -45,6 +46,42 @@ class ProfileTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Send Test Email');
+    }
+
+    public function test_global_admin_profile_shows_account_plan_oversight_section(): void
+    {
+        $account = Account::factory()->create([
+            'name' => 'Atlas Realty',
+            'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+            'billing_status' => Account::BILLING_STATUS_ACTIVE,
+            'stripe_customer_id' => null,
+        ]);
+
+        $globalAdmin = User::factory()->create([
+            'role' => 'global_admin',
+            'account_id' => $account->id,
+        ]);
+
+        $response = $this
+            ->actingAs($globalAdmin)
+            ->get('/profile');
+
+        $response->assertOk();
+        $response->assertSee('Global Account Oversight');
+        $response->assertSee('Atlas Realty');
+        $response->assertSee('Single Agent');
+    }
+
+    public function test_non_global_admin_profile_does_not_show_account_oversight_section(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this
+            ->actingAs($admin)
+            ->get('/profile');
+
+        $response->assertOk();
+        $response->assertDontSee('Global Account Oversight');
     }
 
     public function test_profile_information_can_be_updated(): void

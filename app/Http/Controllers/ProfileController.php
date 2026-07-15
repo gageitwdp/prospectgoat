@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Mail\AdminEmailTestMail;
+use App\Models\Account;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Billing\GlobalAdminBillingOverviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,14 +15,27 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(private readonly GlobalAdminBillingOverviewService $billingOverview) {}
+
     /**
      * Display the user's profile form.
      */
     public function edit(Request $request): View
     {
-        return view('profile.edit', [
+        $data = [
             'user' => $request->user(),
-        ]);
+        ];
+
+        if ($request->user()?->isGlobalAdmin()) {
+            $data['globalAccountOverview'] = $this->billingOverview->buildOverview();
+            $data['serviceLevelLabels'] = [
+                Account::SERVICE_LEVEL_SINGLE_AGENT => 'Single Agent',
+                Account::SERVICE_LEVEL_TEAM => 'Team',
+                Account::SERVICE_LEVEL_BROKERAGE => 'Brokerage',
+            ];
+        }
+
+        return view('profile.edit', $data);
     }
 
     /**

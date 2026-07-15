@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Account extends Model
 {
+    use HasFactory;
+
     public const SERVICE_LEVEL_SINGLE_AGENT = 'single_agent';
 
     public const SERVICE_LEVEL_TEAM = 'team';

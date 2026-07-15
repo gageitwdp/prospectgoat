@@ -22,7 +22,10 @@ class EventController extends Controller
 {
     public function index(): View
     {
+        $accountId = $this->resolvePublicAccountId();
+
         $events = Event::query()
+            ->where('account_id', $accountId)
             ->where('status', 'published')
             ->where('event_time', '>=', now())
             ->orderBy('event_time')
@@ -33,7 +36,10 @@ class EventController extends Controller
 
     public function signup(string $slug): View
     {
+        $accountId = $this->resolvePublicAccountId();
+
         $event = Event::query()
+            ->where('account_id', $accountId)
             ->where('slug', $slug)
             ->where('status', 'published')
             ->firstOrFail();
@@ -43,15 +49,19 @@ class EventController extends Controller
 
     public function storeSignup(StoreEventSignupRequest $request, string $slug): RedirectResponse
     {
+        $accountId = $this->resolvePublicAccountId();
+
         $event = Event::query()
+            ->where('account_id', $accountId)
             ->where('slug', $slug)
             ->where('status', 'published')
             ->firstOrFail();
 
         $data = $request->validated();
 
-        $lead = DB::transaction(function () use ($event, $data): Lead {
+        $lead = DB::transaction(function () use ($event, $data, $accountId): Lead {
             $lead = Lead::create([
+            'account_id' => $accountId,
                 'name' => trim($data['first_name'].' '.$data['last_name']),
                 'email' => $data['email'],
                 'phone' => $data['phone'],
@@ -64,6 +74,7 @@ class EventController extends Controller
             ]);
 
             EventRegistration::create([
+                'account_id' => $accountId,
                 'event_id' => $event->id,
                 'lead_id' => $lead->id,
                 'first_name' => $data['first_name'],
@@ -76,17 +87,20 @@ class EventController extends Controller
             ]);
 
             $lead->activities()->create([
+                'account_id' => $accountId,
                 'type' => 'note',
                 'description' => sprintf('Lead submitted from event signup: %s at %s on %s.', $event->name, $event->location, $event->event_time->format('M d, Y g:i A')),
             ]);
 
             $lead->activities()->create([
+                'account_id' => $accountId,
                 'type' => 'note',
                 'description' => sprintf('Working with an agent: %s.', (bool) $data['working_with_agent'] ? 'Yes' : 'No'),
             ]);
 
             if ((bool) $data['working_with_agent']) {
                 $lead->activities()->create([
+                    'account_id' => $accountId,
                     'type' => 'note',
                     'description' => sprintf(
                         'Agent on signed agreement: %s %s.',
@@ -99,7 +113,7 @@ class EventController extends Controller
             return $lead;
         });
 
-        $this->notifyLeadRecipients($lead);
+        $this->notifyLeadRecipients($lead, $accountId);
         $this->sendAttendeeThankYouEmail($lead, $event, $data);
 
         return redirect()
@@ -107,10 +121,11 @@ class EventController extends Controller
             ->with('status', 'Thanks for signing up. We have received your registration.');
     }
 
-    private function notifyLeadRecipients(Lead $lead): void
+    private function notifyLeadRecipients(Lead $lead, int $accountId): void
     {
         if (Schema::hasColumn('users', 'notify_on_new_lead_intake')) {
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereNotNull('email')
                 ->get()
                 ->filter(function (User $user): bool {
@@ -129,6 +144,7 @@ class EventController extends Controller
                 ->values();
         } else {
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereIn('role', ['owner', 'admin', 'manager', 'agent'])
                 ->whereNotNull('email')
                 ->get();

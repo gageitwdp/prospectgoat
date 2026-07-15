@@ -11,12 +11,14 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $metrics = [
-            'total_users' => User::query()->count(),
-            'admin_users' => User::query()->whereIn('role', ['owner', 'admin'])->count(),
-            'manager_users' => User::query()->where('role', 'manager')->count(),
-            'agent_users' => User::query()->where('role', 'agent')->count(),
-            'total_leads' => Lead::query()->count(),
+            'total_users' => User::query()->where('account_id', $accountId)->count(),
+            'admin_users' => User::query()->where('account_id', $accountId)->whereIn('role', ['owner', 'admin'])->count(),
+            'manager_users' => User::query()->where('account_id', $accountId)->where('role', 'manager')->count(),
+            'agent_users' => User::query()->where('account_id', $accountId)->where('role', 'agent')->count(),
+            'total_leads' => Lead::query()->where('account_id', $accountId)->count(),
         ];
 
         $modules = [

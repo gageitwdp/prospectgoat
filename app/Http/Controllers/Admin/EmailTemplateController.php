@@ -16,7 +16,10 @@ class EmailTemplateController extends Controller
 {
     public function index(): View
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $templates = EmailTemplate::query()
+            ->where('account_id', $accountId)
             ->orderBy('name')
             ->get();
 
@@ -25,6 +28,8 @@ class EmailTemplateController extends Controller
 
     public function edit(EmailTemplate $emailTemplate): View
     {
+        abort_unless($emailTemplate->account_id === $this->requireCurrentAccountId(), 404);
+
         return view('admin.email-templates.edit', [
             'template' => $emailTemplate,
             'previewHtml' => $this->renderPreviewHtml($emailTemplate),
@@ -35,6 +40,8 @@ class EmailTemplateController extends Controller
 
     public function update(Request $request, EmailTemplate $emailTemplate): RedirectResponse
     {
+        abort_unless($emailTemplate->account_id === $this->requireCurrentAccountId(), 404);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'subject' => ['required', 'string', 'max:255'],
@@ -56,6 +63,8 @@ class EmailTemplateController extends Controller
 
     public function test(Request $request, EmailTemplate $emailTemplate): RedirectResponse
     {
+        abort_unless($emailTemplate->account_id === $this->requireCurrentAccountId(), 404);
+
         $data = $request->validate([
             'recipient_email' => ['required', 'email', 'max:255'],
             'first_name' => ['required', 'string', 'max:120'],
@@ -64,6 +73,7 @@ class EmailTemplateController extends Controller
         ]);
 
         $lead = new Lead([
+            'account_id' => $this->requireCurrentAccountId(),
             'name' => $data['first_name'].' Test',
             'email' => $data['recipient_email'],
             'phone' => '(470) 588-1505',

@@ -23,28 +23,46 @@ class EmailTemplate extends Model
         ];
     }
 
-    public static function resolveForInquiryType(string $inquiryType): ?self
+    public static function resolveForInquiryType(string $inquiryType, ?int $accountId = null): ?self
     {
         $key = static::keyForInquiryType($inquiryType);
 
-        return static::resolveForKey($key);
+        return static::resolveForKey($key, $accountId);
     }
 
-    public static function resolveForKey(string $key): ?self
+    public static function resolveForKey(string $key, ?int $accountId = null): ?self
     {
-        $template = static::query()
+        $templateQuery = static::query()
             ->where('key', $key)
-            ->where('is_active', true)
-            ->first();
+            ->where('is_active', true);
+
+        if ($accountId !== null) {
+            $templateQuery->where(function ($query) use ($accountId): void {
+                $query
+                    ->where('account_id', $accountId)
+                    ->orWhereNull('account_id');
+            })->orderByRaw('CASE WHEN account_id = ? THEN 0 ELSE 1 END', [$accountId]);
+        }
+
+        $template = $templateQuery->first();
 
         if ($template) {
             return $template;
         }
 
-        return static::query()
+        $fallbackQuery = static::query()
             ->where('key', 'new_lead_default')
-            ->where('is_active', true)
-            ->first();
+            ->where('is_active', true);
+
+        if ($accountId !== null) {
+            $fallbackQuery->where(function ($query) use ($accountId): void {
+                $query
+                    ->where('account_id', $accountId)
+                    ->orWhereNull('account_id');
+            })->orderByRaw('CASE WHEN account_id = ? THEN 0 ELSE 1 END', [$accountId]);
+        }
+
+        return $fallbackQuery->first();
     }
 
     public static function keyForInquiryType(string $inquiryType): string

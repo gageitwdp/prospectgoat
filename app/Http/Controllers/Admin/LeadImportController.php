@@ -46,6 +46,8 @@ class LeadImportController extends Controller
 
     public function export(): Response
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $columns = [
             'id',
             'name',
@@ -63,6 +65,7 @@ class LeadImportController extends Controller
         $lines = [implode(',', $columns)];
 
         $leads = Lead::query()
+            ->where('account_id', $accountId)
             ->with('assignedManager')
             ->orderBy('id')
             ->get();
@@ -93,6 +96,8 @@ class LeadImportController extends Controller
 
     public function upload(Request $request): RedirectResponse
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt'],
         ]);
@@ -157,8 +162,9 @@ class LeadImportController extends Controller
             }
 
             // Import should not trigger lead-created events that may send confirmation emails.
-            $lead = Lead::withoutEvents(function () use ($rowData): Lead {
+            $lead = Lead::withoutEvents(function () use ($rowData, $accountId): Lead {
                 return Lead::create([
+                    'account_id' => $accountId,
                     'name' => trim($rowData['first_name'].' '.$rowData['last_name']),
                     'email' => $rowData['email'] ?? null,
                     'phone' => $rowData['phone'] ?? null,
@@ -171,6 +177,7 @@ class LeadImportController extends Controller
             });
 
             $lead->activities()->create([
+                'account_id' => $accountId,
                 'type' => 'note',
                 'description' => 'Lead imported from admin CSV upload.',
             ]);

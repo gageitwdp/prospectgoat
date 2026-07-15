@@ -14,8 +14,12 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table): void {
             $table->unsignedBigInteger('account_id')->nullable()->after('id');
-            $table->string('role', 40)->default('agent')->change();
         });
+
+        $driver = DB::getDriverName();
+        if ($driver === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin','owner','manager','agent') NOT NULL DEFAULT 'agent'");
+        }
 
         Schema::table('users', function (Blueprint $table): void {
             $table->foreign('account_id')->references('id')->on('accounts')->nullOnDelete();
@@ -28,6 +32,17 @@ return new class extends Migration
         $this->addAccountColumn('events');
         $this->addAccountColumn('event_registrations');
         $this->addAccountColumn('email_templates');
+
+        $defaultAccountId = $this->resolveDefaultAccountId();
+        if ($defaultAccountId !== null) {
+            DB::table('users')->whereNull('account_id')->update(['account_id' => $defaultAccountId]);
+            $this->backfillAccountId('leads', $defaultAccountId);
+            $this->backfillAccountId('lead_activities', $defaultAccountId);
+            $this->backfillAccountId('tasks', $defaultAccountId);
+            $this->backfillAccountId('events', $defaultAccountId);
+            $this->backfillAccountId('event_registrations', $defaultAccountId);
+            $this->backfillAccountId('email_templates', $defaultAccountId);
+        }
 
         DB::table('users')->where('role', 'admin')->update(['role' => 'owner']);
     }
@@ -50,11 +65,31 @@ return new class extends Migration
             $table->dropColumn('account_id');
         });
 
-        Schema::table('users', function (Blueprint $table): void {
-            $table->string('role', 40)->default('agent')->change();
-        });
+        $driver = DB::getDriverName();
+        if ($driver === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin','agent') NOT NULL DEFAULT 'agent'");
+        }
 
         DB::table('users')->where('role', 'owner')->update(['role' => 'admin']);
+    }
+
+    private function resolveDefaultAccountId(): ?int
+    {
+        $existing = DB::table('accounts')->orderBy('id')->value('id');
+        if ($existing !== null) {
+            return (int) $existing;
+        }
+
+        return null;
+    }
+
+    private function backfillAccountId(string $tableName, int $accountId): void
+    {
+        if (! Schema::hasTable($tableName) || ! Schema::hasColumn($tableName, 'account_id')) {
+            return;
+        }
+
+        DB::table($tableName)->whereNull('account_id')->update(['account_id' => $accountId]);
     }
 
     private function addAccountColumn(string $tableName): void

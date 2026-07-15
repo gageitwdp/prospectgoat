@@ -97,6 +97,8 @@ class ProspectingController extends Controller
 
     public function storeLead(Request $request): JsonResponse
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $validator = Validator::make($request->all(), [
             'owner_full_name' => ['required', 'string', 'max:255'],
             'property_full_address' => ['required', 'string', 'max:255'],
@@ -119,7 +121,7 @@ class ProspectingController extends Controller
         $name = trim($data['owner_full_name']);
         $address = trim($data['property_full_address']);
 
-        if ($this->duplicateLeadExists($name, $address)) {
+        if ($this->duplicateLeadExists($name, $address, $accountId)) {
             return response()->json([
                 'message' => 'This lead already exists and was skipped.',
             ], 409);
@@ -129,6 +131,7 @@ class ProspectingController extends Controller
         $email = trim((string) ($data['email'] ?? ''));
 
         $lead = Lead::create([
+            'account_id' => $accountId,
             'name' => $name,
             'email' => $email !== '' ? $email : self::DEFAULT_EMAIL,
             'phone' => $phone !== '' ? $phone : self::DEFAULT_PHONE,
@@ -140,6 +143,7 @@ class ProspectingController extends Controller
         ]);
 
         $lead->activities()->create([
+            'account_id' => $accountId,
             'type' => 'note',
             'description' => 'Lead saved from admin prospecting tool CSV workflow.',
         ]);
@@ -155,12 +159,13 @@ class ProspectingController extends Controller
         return strtolower(trim($header));
     }
 
-    private function duplicateLeadExists(string $name, string $address): bool
+    private function duplicateLeadExists(string $name, string $address, int $accountId): bool
     {
         $normalizedName = strtolower(trim($name));
         $normalizedAddress = strtolower(trim($address));
 
         return Lead::query()
+            ->where('account_id', $accountId)
             ->whereRaw('LOWER(TRIM(name)) = ?', [$normalizedName])
             ->whereRaw('LOWER(TRIM(address)) = ?', [$normalizedAddress])
             ->exists();

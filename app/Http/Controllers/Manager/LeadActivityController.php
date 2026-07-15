@@ -11,7 +11,12 @@ class LeadActivityController extends Controller
 {
     public function store(StoreLeadActivityRequest $request, Lead $lead): RedirectResponse
     {
-        $lead->activities()->create($request->validated());
+        abort_unless($lead->account_id === $this->requireCurrentAccountId(), 404);
+
+        $lead->activities()->create([
+            ...$request->validated(),
+            'account_id' => $lead->account_id,
+        ]);
 
         return back()->with('status', 'Lead activity added.');
     }

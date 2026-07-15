@@ -13,7 +13,10 @@ class UserManagementController extends Controller
 {
     public function index(): View
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $users = User::query()
+            ->where('account_id', $accountId)
             ->orderBy('role')
             ->orderBy('name')
             ->paginate(20)
@@ -29,6 +32,8 @@ class UserManagementController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
@@ -41,6 +46,7 @@ class UserManagementController extends Controller
         User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'account_id' => $accountId,
             'role' => $data['role'],
             'password' => $data['password'],
             'notify_on_new_lead_intake' => (bool) ($data['notify_on_new_lead_intake'] ?? false),
@@ -54,11 +60,15 @@ class UserManagementController extends Controller
 
     public function edit(User $user): View
     {
+        abort_unless($user->account_id === $this->requireCurrentAccountId(), 404);
+
         return view('admin.users.edit', compact('user'));
     }
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        abort_unless($user->account_id === $this->requireCurrentAccountId(), 404);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
@@ -95,6 +105,8 @@ class UserManagementController extends Controller
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
+        abort_unless($user->account_id === $this->requireCurrentAccountId(), 404);
+
         if ($request->user()->id === $user->id) {
             return redirect()
                 ->route('admin.users.index')
@@ -110,6 +122,8 @@ class UserManagementController extends Controller
 
     public function bulkDestroy(Request $request): RedirectResponse
     {
+        $accountId = $this->requireCurrentAccountId();
+
         $data = $request->validate([
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['integer', 'exists:users,id'],
@@ -129,7 +143,7 @@ class UserManagementController extends Controller
                 ->with('status', 'No users deleted. Your own account cannot be bulk deleted.');
         }
 
-        User::query()->whereIn('id', $userIds)->delete();
+        User::query()->where('account_id', $accountId)->whereIn('id', $userIds)->delete();
 
         return redirect()
             ->route('admin.users.index')

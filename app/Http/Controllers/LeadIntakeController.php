@@ -32,6 +32,7 @@ class LeadIntakeController extends Controller
 
     public function store(StoreLeadRequest $request): RedirectResponse
     {
+        $accountId = $this->resolvePublicAccountId();
         $data = $request->validated();
 
         $fullName = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
@@ -50,6 +51,7 @@ class LeadIntakeController extends Controller
         }
 
         $lead = Lead::create([
+            'account_id' => $accountId,
             'name' => $name,
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
@@ -61,11 +63,12 @@ class LeadIntakeController extends Controller
         ]);
 
         $lead->activities()->create([
+            'account_id' => $accountId,
             'type' => 'note',
             'description' => sprintf('Lead submitted from %s.', str_replace('_', ' ', $source)),
         ]);
 
-        $template = EmailTemplate::resolveForInquiryType($data['lead_type']);
+        $template = EmailTemplate::resolveForInquiryType($data['lead_type'], $accountId);
 
         if ($template && filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
             try {
@@ -88,6 +91,7 @@ class LeadIntakeController extends Controller
 
         if ($source === 'other' && ! empty($data['other_source_detail'])) {
             $lead->activities()->create([
+                'account_id' => $accountId,
                 'type' => 'note',
                 'description' => sprintf('Other source detail: %s.', $data['other_source_detail']),
             ]);
@@ -95,6 +99,7 @@ class LeadIntakeController extends Controller
 
         if ($source === 'referral') {
             $lead->activities()->create([
+                'account_id' => $accountId,
                 'type' => 'note',
                 'description' => sprintf(
                     'Referral provided by %s %s (%s, %s).',
@@ -108,6 +113,7 @@ class LeadIntakeController extends Controller
 
         if (Schema::hasColumn('users', 'notify_on_new_lead_intake')) {
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereNotNull('email')
                 ->get()
                 ->filter(function (User $user): bool {
@@ -130,6 +136,7 @@ class LeadIntakeController extends Controller
             ]);
 
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereIn('role', ['owner', 'admin', 'manager', 'agent'])
                 ->whereNotNull('email')
                 ->get();
@@ -180,11 +187,13 @@ class LeadIntakeController extends Controller
 
     public function storeBuyer(StoreBuyerLeadRequest $request): RedirectResponse
     {
+        $accountId = $this->resolvePublicAccountId();
         $data = $request->validated();
 
         $fullName = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
 
         $lead = Lead::create([
+            'account_id' => $accountId,
             'name' => $fullName,
             'email' => $data['email'],
             'phone' => $data['phone'],
@@ -208,6 +217,7 @@ class LeadIntakeController extends Controller
         ]);
 
         $lead->activities()->create([
+            'account_id' => $accountId,
             'type' => 'note',
             'description' => sprintf(
                 'Buyer intake submitted: timeline %s, budget %s, contact by %s.',
@@ -217,7 +227,7 @@ class LeadIntakeController extends Controller
             ),
         ]);
 
-        $template = EmailTemplate::resolveForKey('new_lead_buyer_qualification');
+        $template = EmailTemplate::resolveForKey('new_lead_buyer_qualification', $accountId);
 
         if ($template && filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
             try {
@@ -240,6 +250,7 @@ class LeadIntakeController extends Controller
 
         if (Schema::hasColumn('users', 'notify_on_new_lead_intake')) {
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereNotNull('email')
                 ->get()
                 ->filter(function (User $user): bool {
@@ -262,6 +273,7 @@ class LeadIntakeController extends Controller
             ]);
 
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereIn('role', ['owner', 'admin', 'manager', 'agent'])
                 ->whereNotNull('email')
                 ->get();
@@ -294,11 +306,13 @@ class LeadIntakeController extends Controller
 
     public function storeSeller(StoreSellerLeadRequest $request): RedirectResponse
     {
+        $accountId = $this->resolvePublicAccountId();
         $data = $request->validated();
 
         $fullName = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? ''));
 
         $lead = Lead::create([
+            'account_id' => $accountId,
             'name' => $fullName,
             'email' => $data['email'],
             'phone' => $data['phone'],
@@ -321,6 +335,7 @@ class LeadIntakeController extends Controller
         ]);
 
         $lead->activities()->create([
+            'account_id' => $accountId,
             'type' => 'note',
             'description' => sprintf(
                 'Seller intake submitted: timeline %s, motivation %s, valuation by %s.',
@@ -330,7 +345,7 @@ class LeadIntakeController extends Controller
             ),
         ]);
 
-        $template = EmailTemplate::resolveForKey('new_lead_seller_profile');
+        $template = EmailTemplate::resolveForKey('new_lead_seller_profile', $accountId);
 
         if ($template && filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
             try {
@@ -353,6 +368,7 @@ class LeadIntakeController extends Controller
 
         if (Schema::hasColumn('users', 'notify_on_new_lead_intake')) {
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereNotNull('email')
                 ->get()
                 ->filter(function (User $user): bool {
@@ -375,6 +391,7 @@ class LeadIntakeController extends Controller
             ]);
 
             $recipients = User::query()
+                ->where('account_id', $accountId)
                 ->whereIn('role', ['owner', 'admin', 'manager', 'agent'])
                 ->whereNotNull('email')
                 ->get();

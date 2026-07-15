@@ -19,11 +19,13 @@ class MortgageCalculatorController extends Controller
 
     public function sendResults(StoreMortgageCalculatorLeadRequest $request): RedirectResponse
     {
+        $accountId = $this->resolvePublicAccountId();
         $data = $request->validated();
         $inputs = $this->normalizedInputs($data);
         $results = $this->calculateMortgage($inputs);
 
         $lead = Lead::create([
+            'account_id' => $accountId,
             'name' => $inputs['full_name'],
             'email' => $inputs['email'],
             'phone' => $inputs['phone'] ?: null,
@@ -35,6 +37,7 @@ class MortgageCalculatorController extends Controller
         ]);
 
         $lead->activities()->create([
+            'account_id' => $accountId,
             'type' => 'note',
             'description' => sprintf(
                 'Mortgage calculator request captured. Home price: $%s, down payment: $%s, rate: %s%%, term: %s years, estimated monthly total: $%s.',

@@ -15,6 +15,16 @@ use Illuminate\View\View;
 
 class LeadController extends Controller
 {
+    private function accountId(): int
+    {
+        return $this->requireCurrentAccountId();
+    }
+
+    private function ensureLeadInAccount(Lead $lead): void
+    {
+        abort_unless($lead->account_id === $this->accountId(), 404);
+    }
+
     public function pipeline(Request $request): View
     {
         $statuses = ['new', 'contacted', 'qualified', 'active', 'closed'];
@@ -25,7 +35,9 @@ class LeadController extends Controller
             $period = '30';
         }
 
-        $query = Lead::query()->with('assignedManager');
+        $query = Lead::query()
+            ->where('account_id', $this->accountId())
+            ->with('assignedManager');
 
         if ($period !== 'all') {
             $query->where('created_at', '>=', now()->subDays((int) $period));
@@ -62,7 +74,9 @@ class LeadController extends Controller
     {
         $visibility = $request->string('visibility')->toString();
 
-        $query = Lead::query()->with('assignedManager');
+        $query = Lead::query()
+            ->where('account_id', $this->accountId())
+            ->with('assignedManager');
 
         if ($visibility === 'deleted') {
             $query->onlyTrashed();
@@ -80,6 +94,7 @@ class LeadController extends Controller
             ->withQueryString();
 
         $managers = User::query()
+            ->where('account_id', $this->accountId())
             ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
@@ -89,6 +104,8 @@ class LeadController extends Controller
 
     public function show(Lead $lead): View
     {
+        $this->ensureLeadInAccount($lead);
+
         $lead->load([
             'assignedManager',
             'activities' => fn ($query) => $query->latest('created_at'),
@@ -96,6 +113,7 @@ class LeadController extends Controller
         ]);
 
         $managers = User::query()
+            ->where('account_id', $this->accountId())
             ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
@@ -105,6 +123,8 @@ class LeadController extends Controller
 
     public function update(UpdateLeadRequest $request, Lead $lead): RedirectResponse
     {
+        $this->ensureLeadInAccount($lead);
+
         $data = $request->validated();
 
         $this->ensureValidTransition($lead->status, $data['status']);
@@ -116,16 +136,20 @@ class LeadController extends Controller
 
         if ($originalStatus !== $lead->status) {
             $lead->activities()->create([
+                'account_id' => $lead->account_id,
                 'type' => 'note',
                 'description' => sprintf('Lead status changed from %s to %s.', $originalStatus, $lead->status),
             ]);
         }
 
         if ($originalAssigned !== $lead->assigned_to) {
-            $from = $originalAssigned ? User::find($originalAssigned)?->name : 'Unassigned';
+            $from = $originalAssigned
+                ? User::query()->where('account_id', $this->accountId())->find($originalAssigned)?->name
+                : 'Unassigned';
             $to = $lead->assignedManager?->name ?? 'Unassigned';
 
             $lead->activities()->create([
+                'account_id' => $lead->account_id,
                 'type' => 'note',
                 'description' => sprintf('Lead assignment changed from %s to %s.', $from, $to),
             ]);
@@ -144,6 +168,8 @@ class LeadController extends Controller
 
     public function moveStatus(Request $request, Lead $lead): RedirectResponse
     {
+        $this->ensureLeadInAccount($lead);
+
         $data = $request->validate([
             'status' => ['required', 'in:new,contacted,qualified,active,closed'],
         ]);
@@ -155,6 +181,7 @@ class LeadController extends Controller
 
         if ($originalStatus !== $lead->status) {
             $lead->activities()->create([
+                'account_id' => $lead->account_id,
                 'type' => 'note',
                 'description' => sprintf('Lead status changed from %s to %s.', $originalStatus, $lead->status),
             ]);
@@ -166,6 +193,7 @@ class LeadController extends Controller
     public function destroy(Request $request, Lead $lead): RedirectResponse
     {
         abort_unless($request->user()?->isOwner(), 403);
+        $this->ensureLeadInAccount($lead);
 
         $lead->delete();
 
@@ -189,7 +217,10 @@ class LeadController extends Controller
             ->values();
 
         DB::transaction(function () use ($leadIds): void {
-            Lead::query()->whereIn('id', $leadIds)->delete();
+            Lead::query()
+                ->where('account_id', $this->accountId())
+                ->whereIn('id', $leadIds)
+                ->delete();
         });
 
         return redirect()
@@ -202,6 +233,7 @@ class LeadController extends Controller
         abort_unless($request->user()?->isOwner(), 403);
 
         $lead = Lead::query()->withTrashed()->findOrFail($leadId);
+        abort_unless($lead->account_id === $this->accountId(), 404);
 
         if (! $lead->trashed()) {
             return redirect()
@@ -232,6 +264,7 @@ class LeadController extends Controller
 
         $restored = Lead::query()
             ->onlyTrashed()
+            ->where('account_id', $this->accountId())
             ->whereIn('id', $leadIds)
             ->restore();
 

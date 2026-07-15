@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
+use App\Http\Controllers\Admin\GlobalAccountOversightController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Admin\LeadImportController;
 use App\Http\Controllers\Admin\ProspectingController;
@@ -99,6 +100,7 @@ Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('a
     Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
     Route::delete('/users/bulk-destroy', [UserManagementController::class, 'bulkDestroy'])->name('users.bulk-destroy');
     Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+    Route::get('/global-account-oversight', [GlobalAccountOversightController::class, 'index'])->name('global-account-oversight.index');
 });
 
 Route::middleware('auth')->group(function () {

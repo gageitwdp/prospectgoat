@@ -49,6 +49,15 @@
             'status' => 'Soon',
         ],
     ];
+
+    if (auth()->user()?->isGlobalAdmin()) {
+        $navItems[] = [
+            'label' => 'Global Account Oversight',
+            'route' => route('admin.global-account-oversight.index'),
+            'active' => request()->routeIs('admin.global-account-oversight.*'),
+            'status' => 'Live',
+        ];
+    }
 @endphp
 
 <aside class="lp-card p-5 sm:p-6">

@@ -73,6 +73,15 @@ class DashboardController extends Controller
             ],
         ];
 
+        if ($this->currentUserIsGlobalAdmin()) {
+            $modules[] = [
+                'name' => 'Global Account Oversight',
+                'description' => 'Monitor all tenant accounts, plan tiers, billing status, and payment history.',
+                'route' => route('admin.global-account-oversight.index'),
+                'status' => 'Live',
+            ];
+        }
+
         return view('admin.dashboard', compact('metrics', 'modules'));
     }
 }

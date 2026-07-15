@@ -22,6 +22,7 @@
                     <th class="px-3 py-2">Account</th>
                     <th class="px-3 py-2">Plan</th>
                     <th class="px-3 py-2">Billing Status</th>
+                    <th class="px-3 py-2">Enabled Modules</th>
                     <th class="px-3 py-2">Last Sync</th>
                     <th class="px-3 py-2">Last Event</th>
                     <th class="px-3 py-2">Users</th>
@@ -40,6 +41,17 @@
                             {{ $serviceLevelLabels[$account['service_level']] ?? ucfirst(str_replace('_', ' ', (string) $account['service_level'])) }}
                         </td>
                         <td class="px-3 py-3 align-top text-gray-700">{{ ucfirst(str_replace('_', ' ', (string) $account['billing_status'])) }}</td>
+                        <td class="px-3 py-3 align-top text-xs text-gray-700">
+                            @if (! empty($account['enabled_modules']))
+                                <div class="flex flex-wrap gap-1.5">
+                                    @foreach ($account['enabled_modules'] as $moduleLabel)
+                                        <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">{{ $moduleLabel }}</span>
+                                    @endforeach
+                                </div>
+                            @else
+                                <span class="text-gray-500">No modules enabled for this plan.</span>
+                            @endif
+                        </td>
                         <td class="px-3 py-3 align-top text-gray-700">
                             {{ optional($account['last_billing_sync_at'])->format('M d, Y g:i A') ?: 'Not synced yet' }}
                         </td>
@@ -56,7 +68,7 @@
                         <td class="px-3 py-3 align-top text-gray-700">{{ optional($account['created_at'])->format('M d, Y') }}</td>
                     </tr>
                     <tr class="bg-gray-50/60">
-                        <td colspan="8" class="px-3 py-3">
+                        <td colspan="9" class="px-3 py-3">
                             <p class="text-xs font-semibold uppercase tracking-wide text-gray-600">Recent Payments</p>
 
                             @if (($account['payment_history']['error'] ?? null) !== null)
@@ -82,7 +94,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-3 py-6 text-center text-sm text-gray-500">{{ __('No accounts found.') }}</td>
+                        <td colspan="9" class="px-3 py-6 text-center text-sm text-gray-500">{{ __('No accounts found.') }}</td>
                     </tr>
                 @endforelse
             </tbody>

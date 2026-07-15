@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Account;
+use App\Models\PlanModuleVisibility;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -47,5 +49,44 @@ class GlobalAccountOversightModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Global Account Oversight');
+    }
+
+    public function test_global_admin_oversight_shows_fallback_when_plan_has_no_enabled_modules(): void
+    {
+        $account = Account::factory()->create([
+            'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+        ]);
+
+        User::factory()->create([
+            'role' => 'admin',
+            'account_id' => $account->id,
+        ]);
+
+        foreach ([
+            'lead_management',
+            'events',
+            'user_management',
+            'lead_import',
+            'prospecting_tool',
+            'email_templates',
+        ] as $moduleKey) {
+            PlanModuleVisibility::query()->updateOrCreate(
+                [
+                    'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+                    'module_key' => $moduleKey,
+                ],
+                [
+                    'is_enabled' => false,
+                ],
+            );
+        }
+
+        $globalAdmin = User::factory()->create(['role' => 'global_admin']);
+
+        $response = $this->actingAs($globalAdmin)->get(route('admin.global-account-oversight.index'));
+
+        $response->assertOk();
+        $response->assertSee('Enabled Modules');
+        $response->assertSee('No modules enabled for this plan.');
     }
 }

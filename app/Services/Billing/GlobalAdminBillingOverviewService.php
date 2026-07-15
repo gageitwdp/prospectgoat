@@ -3,23 +3,27 @@
 namespace App\Services\Billing;
 
 use App\Models\Account;
+use App\Services\Plans\PlanModuleVisibilityService;
 use Illuminate\Support\Collection;
 use Stripe\StripeClient;
 use Throwable;
 
 class GlobalAdminBillingOverviewService
 {
+    public function __construct(private readonly PlanModuleVisibilityService $planModuleVisibility) {}
+
     /**
      * @return array{isStripeConfigured: bool, accounts: array<int, array<string, mixed>>}
      */
     public function buildOverview(): array
     {
         $isStripeConfigured = $this->isStripeConfigured();
+        $moduleMatrix = $this->planModuleVisibility->matrix();
         $accounts = Account::query()
             ->withCount('users')
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn (Account $account): array => $this->mapAccount($account, $isStripeConfigured))
+            ->map(fn (Account $account): array => $this->mapAccount($account, $isStripeConfigured, $moduleMatrix))
             ->all();
 
         return [
@@ -37,7 +41,7 @@ class GlobalAdminBillingOverviewService
     /**
      * @return array<string, mixed>
      */
-    private function mapAccount(Account $account, bool $isStripeConfigured): array
+    private function mapAccount(Account $account, bool $isStripeConfigured, array $moduleMatrix): array
     {
         return [
             'id' => $account->id,
@@ -52,8 +56,26 @@ class GlobalAdminBillingOverviewService
             'last_billing_event_type' => $account->last_billing_event_type,
             'last_billing_event_id' => $account->last_billing_event_id,
             'created_at' => $account->created_at,
+            'enabled_modules' => $this->enabledModulesForServiceLevel($account->service_level, $moduleMatrix),
             'payment_history' => $this->paymentHistoryForAccount($account, $isStripeConfigured),
         ];
+    }
+
+    /**
+     * @param  array<string, array{label: string, description: string, by_plan: array<string, bool>}>  $moduleMatrix
+     * @return array<int, string>
+     */
+    private function enabledModulesForServiceLevel(?string $serviceLevel, array $moduleMatrix): array
+    {
+        if (! $serviceLevel) {
+            return [];
+        }
+
+        return collect($moduleMatrix)
+            ->filter(fn (array $module): bool => (bool) ($module['by_plan'][$serviceLevel] ?? true))
+            ->map(fn (array $module): string => $module['label'])
+            ->values()
+            ->all();
     }
 
     /**

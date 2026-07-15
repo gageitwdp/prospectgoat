@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
 use App\Models\User;
+use App\Services\Plans\PlanModuleVisibilityService;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly PlanModuleVisibilityService $planModuleVisibility) {}
+
     public function index(): View
     {
+        $authUser = auth()->user();
         $userQuery = User::query();
         $leadQuery = Lead::query();
 
@@ -34,30 +38,42 @@ class DashboardController extends Controller
                 'description' => 'Review leads, monitor pipeline stages, and coordinate follow-up tasks.',
                 'route' => route('manager.leads.index'),
                 'status' => 'Live',
+                'module_key' => 'lead_management',
+            ],
+            [
+                'name' => 'Events',
+                'description' => 'Create, edit, and manage event listings and registrations.',
+                'route' => route('admin.events.index'),
+                'status' => 'Live',
+                'module_key' => 'events',
             ],
             [
                 'name' => 'User Management',
                 'description' => 'Manage owner, manager, and agent access, profile details, and role assignments.',
                 'route' => route('admin.users.index'),
                 'status' => 'Live',
+                'module_key' => 'user_management',
             ],
             [
                 'name' => 'Lead Import',
                 'description' => 'Download the CSV template and import lead data in bulk.',
                 'route' => route('admin.imports.leads.index'),
                 'status' => 'Live',
+                'module_key' => 'lead_import',
             ],
             [
                 'name' => 'Prospecting Tool',
                 'description' => 'Review one prospect card at a time, enrich contact details, and save qualified leads.',
                 'route' => route('admin.prospecting.index'),
                 'status' => 'Live',
+                'module_key' => 'prospecting_tool',
             ],
             [
                 'name' => 'Email Templates',
                 'description' => 'Edit inquiry confirmation emails, preview content, and test sends.',
                 'route' => route('admin.email-templates.index'),
                 'status' => 'Live',
+                'module_key' => 'email_templates',
             ],
             [
                 'name' => 'Analytics',
@@ -80,6 +96,21 @@ class DashboardController extends Controller
                 'route' => route('admin.global-account-oversight.index'),
                 'status' => 'Live',
             ];
+
+            $modules[] = [
+                'name' => 'Plan Module Visibility',
+                'description' => 'Control which modules are available to each service plan.',
+                'route' => route('admin.plan-module-visibility.index'),
+                'status' => 'Live',
+            ];
+        } else {
+            $modules = array_values(array_filter($modules, function (array $module) use ($authUser): bool {
+                if (! isset($module['module_key'])) {
+                    return true;
+                }
+
+                return $this->planModuleVisibility->isEnabledForAccount($authUser?->account, $module['module_key']);
+            }));
         }
 
         return view('admin.dashboard', compact('metrics', 'modules'));

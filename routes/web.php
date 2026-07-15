@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\GlobalAccountOversightController;
+use App\Http\Controllers\Admin\PlanModuleVisibilityController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\LeadImportController;
@@ -63,7 +64,7 @@ Route::post('/events/{slug}/signup', [EventController::class, 'storeSignup'])->n
 Route::get('/mortgage-calculator', [MortgageCalculatorController::class, 'index'])->name('mortgage.calculator');
 Route::post('/mortgage-calculator/send-results', [MortgageCalculatorController::class, 'sendResults'])->name('mortgage.calculator.send');
 
-Route::middleware(['auth', 'billing.active', 'manager'])->prefix('manager')->name('manager.')->group(function () {
+Route::middleware(['auth', 'billing.active', 'manager', 'module.enabled:lead_management'])->prefix('manager')->name('manager.')->group(function () {
     Route::get('/leads/pipeline', [LeadController::class, 'pipeline'])->name('leads.pipeline');
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::delete('/leads/bulk-destroy', [LeadController::class, 'bulkDestroy'])->middleware('admin')->name('leads.bulk-destroy');
@@ -82,30 +83,47 @@ Route::middleware(['auth', 'billing.active', 'manager'])->prefix('manager')->nam
 
 Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/events', [AdminEventController::class, 'index'])->name('events.index');
-    Route::get('/events/create', [AdminEventController::class, 'create'])->name('events.create');
-    Route::post('/events', [AdminEventController::class, 'store'])->name('events.store');
-    Route::get('/events/{event}/edit', [AdminEventController::class, 'edit'])->name('events.edit');
-    Route::put('/events/{event}', [AdminEventController::class, 'update'])->name('events.update');
-    Route::get('/imports/leads', [LeadImportController::class, 'index'])->name('imports.leads.index');
-    Route::get('/imports/leads/template', [LeadImportController::class, 'downloadTemplate'])->name('imports.leads.template');
-    Route::get('/imports/leads/export', [LeadImportController::class, 'export'])->name('imports.leads.export');
-    Route::post('/imports/leads', [LeadImportController::class, 'upload'])->name('imports.leads.upload');
-    Route::get('/prospecting', [ProspectingController::class, 'index'])->name('prospecting.index');
-    Route::post('/prospecting/parse-csv', [ProspectingController::class, 'parseCsv'])->name('prospecting.parse-csv');
-    Route::post('/prospecting/save-lead', [ProspectingController::class, 'storeLead'])->name('prospecting.save-lead');
-    Route::get('/email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
-    Route::get('/email-templates/{emailTemplate}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
-    Route::put('/email-templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
-    Route::post('/email-templates/{emailTemplate}/test', [EmailTemplateController::class, 'test'])->name('email-templates.test');
-    Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
-    Route::get('/users/create', [UserManagementController::class, 'create'])->name('users.create');
-    Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
-    Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
-    Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
-    Route::delete('/users/bulk-destroy', [UserManagementController::class, 'bulkDestroy'])->name('users.bulk-destroy');
-    Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+    Route::middleware('module.enabled:events')->group(function () {
+        Route::get('/events', [AdminEventController::class, 'index'])->name('events.index');
+        Route::get('/events/create', [AdminEventController::class, 'create'])->name('events.create');
+        Route::post('/events', [AdminEventController::class, 'store'])->name('events.store');
+        Route::get('/events/{event}/edit', [AdminEventController::class, 'edit'])->name('events.edit');
+        Route::put('/events/{event}', [AdminEventController::class, 'update'])->name('events.update');
+    });
+
+    Route::middleware('module.enabled:lead_import')->group(function () {
+        Route::get('/imports/leads', [LeadImportController::class, 'index'])->name('imports.leads.index');
+        Route::get('/imports/leads/template', [LeadImportController::class, 'downloadTemplate'])->name('imports.leads.template');
+        Route::get('/imports/leads/export', [LeadImportController::class, 'export'])->name('imports.leads.export');
+        Route::post('/imports/leads', [LeadImportController::class, 'upload'])->name('imports.leads.upload');
+    });
+
+    Route::middleware('module.enabled:prospecting_tool')->group(function () {
+        Route::get('/prospecting', [ProspectingController::class, 'index'])->name('prospecting.index');
+        Route::post('/prospecting/parse-csv', [ProspectingController::class, 'parseCsv'])->name('prospecting.parse-csv');
+        Route::post('/prospecting/save-lead', [ProspectingController::class, 'storeLead'])->name('prospecting.save-lead');
+    });
+
+    Route::middleware('module.enabled:email_templates')->group(function () {
+        Route::get('/email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::get('/email-templates/{emailTemplate}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
+        Route::put('/email-templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
+        Route::post('/email-templates/{emailTemplate}/test', [EmailTemplateController::class, 'test'])->name('email-templates.test');
+    });
+
+    Route::middleware('module.enabled:user_management')->group(function () {
+        Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::get('/users/create', [UserManagementController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
+        Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
+        Route::delete('/users/bulk-destroy', [UserManagementController::class, 'bulkDestroy'])->name('users.bulk-destroy');
+        Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+    });
+
     Route::get('/global-account-oversight', [GlobalAccountOversightController::class, 'index'])->name('global-account-oversight.index');
+    Route::get('/plan-module-visibility', [PlanModuleVisibilityController::class, 'index'])->name('plan-module-visibility.index');
+    Route::put('/plan-module-visibility', [PlanModuleVisibilityController::class, 'update'])->name('plan-module-visibility.update');
 });
 
 Route::middleware('auth')->group(function () {

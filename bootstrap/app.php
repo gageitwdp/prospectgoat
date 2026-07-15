@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureManagerRole;
+use App\Http\Middleware\EnsurePlanModuleIsEnabled;
 use App\Http\Middleware\EnsureAdminRole;
 use App\Http\Middleware\EnsureAccountBillingIsActive;
 use Illuminate\Foundation\Application;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'manager' => EnsureManagerRole::class,
             'admin' => EnsureAdminRole::class,
             'billing.active' => EnsureAccountBillingIsActive::class,
+            'module.enabled' => EnsurePlanModuleIsEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

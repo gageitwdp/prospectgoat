@@ -1,40 +1,49 @@
 @php
+    $planModuleVisibility = app(\App\Services\Plans\PlanModuleVisibilityService::class);
+    $authUser = auth()->user();
+
     $navItems = [
         [
             'label' => 'Lead Management',
             'route' => route('manager.leads.index'),
             'active' => request()->routeIs('manager.leads.*'),
             'status' => 'Live',
+            'module_key' => 'lead_management',
         ],
         [
             'label' => 'Events',
             'route' => route('admin.events.index'),
             'active' => request()->routeIs('admin.events.*'),
             'status' => 'Live',
+            'module_key' => 'events',
         ],
         [
             'label' => 'User Management',
             'route' => route('admin.users.index'),
             'active' => request()->routeIs('admin.users.*'),
             'status' => 'Live',
+            'module_key' => 'user_management',
         ],
         [
             'label' => 'Import Leads',
             'route' => route('admin.imports.leads.index'),
             'active' => request()->routeIs('admin.imports.leads.*'),
             'status' => 'Live',
+            'module_key' => 'lead_import',
         ],
         [
             'label' => 'Prospecting Tool',
             'route' => route('admin.prospecting.index'),
             'active' => request()->routeIs('admin.prospecting.*'),
             'status' => 'Live',
+            'module_key' => 'prospecting_tool',
         ],
         [
             'label' => 'Email Templates',
             'route' => route('admin.email-templates.index'),
             'active' => request()->routeIs('admin.email-templates.*'),
             'status' => 'Live',
+            'module_key' => 'email_templates',
         ],
         [
             'label' => 'Analytics',
@@ -57,6 +66,23 @@
             'active' => request()->routeIs('admin.global-account-oversight.*'),
             'status' => 'Live',
         ];
+
+        $navItems[] = [
+            'label' => 'Plan Module Visibility',
+            'route' => route('admin.plan-module-visibility.index'),
+            'active' => request()->routeIs('admin.plan-module-visibility.*'),
+            'status' => 'Live',
+        ];
+    }
+
+    if (! $authUser?->isGlobalAdmin()) {
+        $navItems = array_values(array_filter($navItems, function (array $item) use ($planModuleVisibility, $authUser): bool {
+            if (! isset($item['module_key'])) {
+                return true;
+            }
+
+            return $planModuleVisibility->isEnabledForAccount($authUser?->account, $item['module_key']);
+        }));
     }
 @endphp
 

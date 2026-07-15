@@ -20,9 +20,26 @@ class LeadController extends Controller
         return $this->requireCurrentAccountId();
     }
 
+    private function isGlobalAdmin(): bool
+    {
+        return $this->currentUserIsGlobalAdmin();
+    }
+
+    private function scopeLeadsToAccount($query)
+    {
+        if ($this->isGlobalAdmin()) {
+            return $query;
+        }
+
+        return $query->where(function ($inner) {
+            $inner->where('account_id', $this->accountId())
+                ->orWhereNull('account_id');
+        });
+    }
+
     private function ensureLeadInAccount(Lead $lead): void
     {
-        abort_unless($lead->account_id === null || $lead->account_id === $this->accountId(), 404);
+        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
     }
 
     public function pipeline(Request $request): View
@@ -36,10 +53,7 @@ class LeadController extends Controller
         }
 
         $query = Lead::query()
-            ->where(function ($query) {
-                $query->where('account_id', $this->accountId())
-                    ->orWhereNull('account_id');
-            })
+            ->tap(fn ($query) => $this->scopeLeadsToAccount($query))
             ->with('assignedManager');
 
         if ($period !== 'all') {
@@ -78,10 +92,7 @@ class LeadController extends Controller
         $visibility = $request->string('visibility')->toString();
 
         $query = Lead::query()
-            ->where(function ($query) {
-                $query->where('account_id', $this->accountId())
-                    ->orWhereNull('account_id');
-            })
+            ->tap(fn ($query) => $this->scopeLeadsToAccount($query))
             ->with('assignedManager');
 
         if ($visibility === 'deleted') {
@@ -100,7 +111,7 @@ class LeadController extends Controller
             ->withQueryString();
 
         $managers = User::query()
-            ->where('account_id', $this->accountId())
+            ->when(! $this->isGlobalAdmin(), fn ($query) => $query->where('account_id', $this->accountId()))
             ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
@@ -119,7 +130,7 @@ class LeadController extends Controller
         ]);
 
         $managers = User::query()
-            ->where('account_id', $this->accountId())
+            ->when(! $this->isGlobalAdmin(), fn ($query) => $query->where('account_id', $this->accountId()))
             ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
@@ -150,7 +161,7 @@ class LeadController extends Controller
 
         if ($originalAssigned !== $lead->assigned_to) {
             $from = $originalAssigned
-                ? User::query()->where('account_id', $this->accountId())->find($originalAssigned)?->name
+                ? User::query()->when(! $this->isGlobalAdmin(), fn ($query) => $query->where('account_id', $this->accountId()))->find($originalAssigned)?->name
                 : 'Unassigned';
             $to = $lead->assignedManager?->name ?? 'Unassigned';
 
@@ -223,11 +234,10 @@ class LeadController extends Controller
             ->values();
 
         DB::transaction(function () use ($leadIds): void {
-            Lead::query()
-                ->where(function ($query) {
-                    $query->where('account_id', $this->accountId())
-                        ->orWhereNull('account_id');
-                })
+            $query = Lead::query();
+            $this->scopeLeadsToAccount($query);
+
+            $query
                 ->whereIn('id', $leadIds)
                 ->delete();
         });
@@ -242,7 +252,7 @@ class LeadController extends Controller
         abort_unless($request->user()?->isOwner(), 403);
 
         $lead = Lead::query()->withTrashed()->findOrFail($leadId);
-        abort_unless($lead->account_id === null || $lead->account_id === $this->accountId(), 404);
+        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
 
         if (! $lead->trashed()) {
             return redirect()
@@ -271,12 +281,10 @@ class LeadController extends Controller
             ->unique()
             ->values();
 
-        $restored = Lead::query()
-            ->onlyTrashed()
-            ->where(function ($query) {
-                $query->where('account_id', $this->accountId())
-                    ->orWhereNull('account_id');
-            })
+        $query = Lead::query()->onlyTrashed();
+        $this->scopeLeadsToAccount($query);
+
+        $restored = $query
             ->whereIn('id', $leadIds)
             ->restore();
 

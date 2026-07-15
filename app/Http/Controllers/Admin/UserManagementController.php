@@ -13,10 +13,8 @@ class UserManagementController extends Controller
 {
     public function index(): View
     {
-        $accountId = $this->requireCurrentAccountId();
-
         $users = User::query()
-            ->where('account_id', $accountId)
+            ->when(! $this->currentUserIsGlobalAdmin(), fn ($query) => $query->where('account_id', $this->requireCurrentAccountId()))
             ->orderBy('role')
             ->orderBy('name')
             ->paginate(20)
@@ -33,11 +31,12 @@ class UserManagementController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $accountId = $this->requireCurrentAccountId();
+        $allowedRoles = $this->allowedRoles($request);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
-            'role' => ['required', 'in:owner,admin,manager,agent'],
+            'role' => ['required', Rule::in($allowedRoles)],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'notify_on_new_lead_intake' => ['sometimes', 'boolean'],
             'notify_on_lead_assignment' => ['sometimes', 'boolean'],
@@ -60,25 +59,26 @@ class UserManagementController extends Controller
 
     public function edit(User $user): View
     {
-        abort_unless($user->account_id === $this->requireCurrentAccountId(), 404);
+        abort_unless($this->inCurrentAccountScope($user->account_id), 404);
 
         return view('admin.users.edit', compact('user'));
     }
 
     public function update(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->account_id === $this->requireCurrentAccountId(), 404);
+        abort_unless($this->inCurrentAccountScope($user->account_id), 404);
+        $allowedRoles = $this->allowedRoles($request);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'role' => ['required', 'in:owner,admin,manager,agent'],
+            'role' => ['required', Rule::in($allowedRoles)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'notify_on_new_lead_intake' => ['sometimes', 'boolean'],
             'notify_on_lead_assignment' => ['sometimes', 'boolean'],
         ]);
 
-        if ($request->user()->id === $user->id && ! in_array($data['role'], ['owner', 'admin'], true)) {
+        if ($request->user()->id === $user->id && ! in_array($data['role'], ['owner', 'admin', 'global_admin'], true)) {
             return redirect()
                 ->route('admin.users.edit', $user)
                 ->with('status', 'You cannot remove admin access from your own account.');
@@ -105,7 +105,7 @@ class UserManagementController extends Controller
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->account_id === $this->requireCurrentAccountId(), 404);
+        abort_unless($this->inCurrentAccountScope($user->account_id), 404);
 
         if ($request->user()->id === $user->id) {
             return redirect()
@@ -122,8 +122,6 @@ class UserManagementController extends Controller
 
     public function bulkDestroy(Request $request): RedirectResponse
     {
-        $accountId = $this->requireCurrentAccountId();
-
         $data = $request->validate([
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['integer', 'exists:users,id'],
@@ -143,10 +141,27 @@ class UserManagementController extends Controller
                 ->with('status', 'No users deleted. Your own account cannot be bulk deleted.');
         }
 
-        User::query()->where('account_id', $accountId)->whereIn('id', $userIds)->delete();
+        User::query()
+            ->when(! $this->currentUserIsGlobalAdmin(), fn ($query) => $query->where('account_id', $this->requireCurrentAccountId()))
+            ->whereIn('id', $userIds)
+            ->delete();
 
         return redirect()
             ->route('admin.users.index')
             ->with('status', sprintf('%d users deleted successfully.', $userIds->count()));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allowedRoles(Request $request): array
+    {
+        $roles = ['owner', 'admin', 'manager', 'agent'];
+
+        if ($request->user()?->isGlobalAdmin()) {
+            $roles[] = 'global_admin';
+        }
+
+        return $roles;
     }
 }

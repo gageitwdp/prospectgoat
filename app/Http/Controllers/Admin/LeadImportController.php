@@ -46,8 +46,6 @@ class LeadImportController extends Controller
 
     public function export(): Response
     {
-        $accountId = $this->requireCurrentAccountId();
-
         $columns = [
             'id',
             'name',
@@ -65,10 +63,14 @@ class LeadImportController extends Controller
         $lines = [implode(',', $columns)];
 
         $leads = Lead::query()
-            ->where(function ($query) use ($accountId) {
-                $query->where('account_id', $accountId)
-                    ->orWhereNull('account_id');
-            })
+            ->when(
+                ! $this->currentUserIsGlobalAdmin(),
+                fn ($query) => $query->where(function ($inner) {
+                    $accountId = $this->requireCurrentAccountId();
+                    $inner->where('account_id', $accountId)
+                        ->orWhereNull('account_id');
+                })
+            )
             ->with('assignedManager')
             ->orderBy('id')
             ->get();

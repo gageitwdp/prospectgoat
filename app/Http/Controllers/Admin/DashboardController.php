@@ -11,14 +11,21 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $accountId = $this->requireCurrentAccountId();
+        $userQuery = User::query();
+        $leadQuery = Lead::query();
+
+        if (! $this->currentUserIsGlobalAdmin()) {
+            $accountId = $this->requireCurrentAccountId();
+            $userQuery->where('account_id', $accountId);
+            $leadQuery->where('account_id', $accountId);
+        }
 
         $metrics = [
-            'total_users' => User::query()->where('account_id', $accountId)->count(),
-            'admin_users' => User::query()->where('account_id', $accountId)->whereIn('role', ['owner', 'admin'])->count(),
-            'manager_users' => User::query()->where('account_id', $accountId)->where('role', 'manager')->count(),
-            'agent_users' => User::query()->where('account_id', $accountId)->where('role', 'agent')->count(),
-            'total_leads' => Lead::query()->where('account_id', $accountId)->count(),
+            'total_users' => (clone $userQuery)->count(),
+            'admin_users' => (clone $userQuery)->whereIn('role', ['owner', 'admin', 'global_admin'])->count(),
+            'manager_users' => (clone $userQuery)->where('role', 'manager')->count(),
+            'agent_users' => (clone $userQuery)->where('role', 'agent')->count(),
+            'total_leads' => (clone $leadQuery)->count(),
         ];
 
         $modules = [

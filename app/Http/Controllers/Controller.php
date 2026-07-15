@@ -8,6 +8,11 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 abstract class Controller
 {
+    protected function currentUserIsGlobalAdmin(): bool
+    {
+        return (bool) auth()->user()?->isGlobalAdmin();
+    }
+
     protected function requireCurrentAccountId(): int
     {
         $user = auth()->user();
@@ -39,6 +44,38 @@ abstract class Controller
         }
 
         throw new HttpException(403, 'Account context is required.');
+    }
+
+    protected function inCurrentAccountScope(?int $resourceAccountId, bool $allowNull = false): bool
+    {
+        if ($this->currentUserIsGlobalAdmin()) {
+            return true;
+        }
+
+        if ($allowNull && $resourceAccountId === null) {
+            return true;
+        }
+
+        return $resourceAccountId !== null
+            && $resourceAccountId === $this->requireCurrentAccountId();
+    }
+
+    protected function applyAccountScope($query, string $column = 'account_id', bool $includeNull = false)
+    {
+        if ($this->currentUserIsGlobalAdmin()) {
+            return $query;
+        }
+
+        $accountId = $this->requireCurrentAccountId();
+
+        if ($includeNull) {
+            return $query->where(function ($innerQuery) use ($column, $accountId) {
+                $innerQuery->where($column, $accountId)
+                    ->orWhereNull($column);
+            });
+        }
+
+        return $query->where($column, $accountId);
     }
 
     protected function resolvePublicAccountId(): int

@@ -23,6 +23,10 @@ class UpdateLeadRequest extends FormRequest
      */
     public function rules(): array
     {
+        $lead = $this->route('lead');
+        $leadAccountId = is_object($lead) ? $lead->account_id : null;
+        $user = $this->user();
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
@@ -33,7 +37,17 @@ class UpdateLeadRequest extends FormRequest
             'status' => ['required', 'in:new,contacted,qualified,active,closed'],
             'assigned_to' => [
                 'nullable',
-                Rule::exists('users', 'id')->where(fn ($query) => $query->where('account_id', $this->user()?->account_id)),
+                Rule::exists('users', 'id')->where(function ($query) use ($user, $leadAccountId) {
+                    if ($user?->isGlobalAdmin()) {
+                        if ($leadAccountId !== null) {
+                            $query->where('account_id', $leadAccountId);
+                        }
+
+                        return;
+                    }
+
+                    $query->where('account_id', $user?->account_id);
+                }),
             ],
         ];
     }

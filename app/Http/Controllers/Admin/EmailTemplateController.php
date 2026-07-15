@@ -16,10 +16,8 @@ class EmailTemplateController extends Controller
 {
     public function index(): View
     {
-        $accountId = $this->requireCurrentAccountId();
-
         $templates = EmailTemplate::query()
-            ->where('account_id', $accountId)
+            ->when(! $this->currentUserIsGlobalAdmin(), fn ($query) => $query->where('account_id', $this->requireCurrentAccountId()))
             ->orderBy('name')
             ->get();
 
@@ -28,7 +26,7 @@ class EmailTemplateController extends Controller
 
     public function edit(EmailTemplate $emailTemplate): View
     {
-        abort_unless($emailTemplate->account_id === $this->requireCurrentAccountId(), 404);
+        abort_unless($this->inCurrentAccountScope($emailTemplate->account_id), 404);
 
         return view('admin.email-templates.edit', [
             'template' => $emailTemplate,
@@ -41,7 +39,7 @@ class EmailTemplateController extends Controller
     public function update(Request $request, EmailTemplate $emailTemplate): RedirectResponse
     {
         $accountId = $this->resolveAccountIdFromRequest($request);
-        abort_unless($emailTemplate->account_id === null || $emailTemplate->account_id === $accountId, 404);
+        abort_unless($this->inCurrentAccountScope($emailTemplate->account_id, true), 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -65,7 +63,7 @@ class EmailTemplateController extends Controller
     public function test(Request $request, EmailTemplate $emailTemplate): RedirectResponse
     {
         $accountId = $this->resolveAccountIdFromRequest($request);
-        abort_unless($emailTemplate->account_id === null || $emailTemplate->account_id === $accountId, 404);
+        abort_unless($this->inCurrentAccountScope($emailTemplate->account_id, true), 404);
 
         $data = $request->validate([
             'recipient_email' => ['required', 'email', 'max:255'],
@@ -248,6 +246,10 @@ class EmailTemplateController extends Controller
 
     private function resolveAccountIdFromRequest(Request $request): int
     {
+        if ($this->currentUserIsGlobalAdmin()) {
+            return (int) ($request->integer('account_id') ?: $this->requireCurrentAccountId());
+        }
+
         $accountId = $request->user()?->account_id;
 
         if (is_numeric($accountId) && (int) $accountId > 0) {

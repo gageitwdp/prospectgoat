@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Account;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -199,5 +200,74 @@ class UserManagementTest extends TestCase
 
         $editResponse = $this->actingAs($agent)->get(route('admin.users.edit', $target));
         $editResponse->assertForbidden();
+    }
+
+    public function test_global_admin_can_view_users_across_all_accounts(): void
+    {
+        $accountOne = Account::factory()->activeBilling()->create();
+        $accountTwo = Account::factory()->activeBilling()->create();
+
+        $globalAdmin = User::factory()->create([
+            'role' => 'global_admin',
+            'account_id' => $accountOne->id,
+        ]);
+
+        $accountOneUser = User::factory()->create([
+            'account_id' => $accountOne->id,
+            'email' => 'first-account-user@example.com',
+        ]);
+
+        $accountTwoUser = User::factory()->create([
+            'account_id' => $accountTwo->id,
+            'email' => 'second-account-user@example.com',
+        ]);
+
+        $response = $this->actingAs($globalAdmin)->get(route('admin.users.index'));
+
+        $response->assertOk();
+        $response->assertSee($accountOneUser->email);
+        $response->assertSee($accountTwoUser->email);
+    }
+
+    public function test_non_global_admin_cannot_assign_global_admin_role(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->post(route('admin.users.store'), [
+            'name' => 'Blocked Global Admin',
+            'email' => 'blocked-global-admin@example.com',
+            'role' => 'global_admin',
+            'password' => 'StrongPass123',
+            'password_confirmation' => 'StrongPass123',
+            'notify_on_new_lead_intake' => '1',
+            'notify_on_lead_assignment' => '0',
+        ]);
+
+        $response->assertSessionHasErrors('role');
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'blocked-global-admin@example.com',
+        ]);
+    }
+
+    public function test_global_admin_can_assign_global_admin_role(): void
+    {
+        $globalAdmin = User::factory()->create(['role' => 'global_admin']);
+
+        $response = $this->actingAs($globalAdmin)->post(route('admin.users.store'), [
+            'name' => 'Second Global Admin',
+            'email' => 'second-global-admin@example.com',
+            'role' => 'global_admin',
+            'password' => 'StrongPass123',
+            'password_confirmation' => 'StrongPass123',
+            'notify_on_new_lead_intake' => '1',
+            'notify_on_lead_assignment' => '1',
+        ]);
+
+        $response->assertRedirect(route('admin.users.index'));
+        $this->assertDatabaseHas('users', [
+            'email' => 'second-global-admin@example.com',
+            'role' => 'global_admin',
+        ]);
     }
 }

@@ -165,10 +165,13 @@ class ProspectingController extends Controller
         $normalizedAddress = strtolower(trim($address));
 
         return Lead::query()
-            ->where(function ($query) use ($accountId) {
-                $query->where('account_id', $accountId)
-                    ->orWhereNull('account_id');
-            })
+            ->when(
+                ! $this->currentUserIsGlobalAdmin(),
+                fn ($query) => $query->where(function ($inner) use ($accountId) {
+                    $inner->where('account_id', $accountId)
+                        ->orWhereNull('account_id');
+                })
+            )
             ->whereRaw('LOWER(TRIM(name)) = ?', [$normalizedName])
             ->whereRaw('LOWER(TRIM(address)) = ?', [$normalizedAddress])
             ->exists();

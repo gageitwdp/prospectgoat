@@ -14,10 +14,8 @@ class EventController extends Controller
 {
     public function index(): View
     {
-        $accountId = $this->requireCurrentAccountId();
-
         $events = Event::query()
-            ->where('account_id', $accountId)
+            ->when(! $this->currentUserIsGlobalAdmin(), fn ($query) => $query->where('account_id', $this->requireCurrentAccountId()))
             ->latest('event_time')
             ->paginate(15)
             ->withQueryString();
@@ -52,15 +50,15 @@ class EventController extends Controller
 
     public function edit(Event $event): View
     {
-        abort_unless($event->account_id === $this->requireCurrentAccountId(), 404);
+        abort_unless($this->inCurrentAccountScope($event->account_id), 404);
 
         return view('admin.events.edit', compact('event'));
     }
 
     public function update(UpdateEventRequest $request, Event $event): RedirectResponse
     {
-        $accountId = $this->requireCurrentAccountId();
-        abort_unless($event->account_id === $accountId, 404);
+        $accountId = $event->account_id ?? $this->requireCurrentAccountId();
+        abort_unless($this->inCurrentAccountScope($event->account_id), 404);
 
         $data = $request->validated();
 

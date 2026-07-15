@@ -14,7 +14,7 @@ class TaskController extends Controller
     public function store(StoreTaskRequest $request, Lead $lead): RedirectResponse
     {
         $accountId = $this->requireCurrentAccountId();
-        abort_unless($lead->account_id === null || $lead->account_id === $accountId, 404);
+        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
 
         $task = $lead->tasks()->create([
             'account_id' => $lead->account_id ?? $accountId,
@@ -37,8 +37,8 @@ class TaskController extends Controller
         $accountId = $this->requireCurrentAccountId();
 
         abort_unless($task->lead_id === $lead->id, 404);
-        abort_unless($lead->account_id === null || $lead->account_id === $accountId, 404);
-        abort_unless($task->account_id === null || $task->account_id === $accountId, 404);
+        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
+        abort_unless($this->inCurrentAccountScope($task->account_id, true), 404);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],

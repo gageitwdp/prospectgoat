@@ -41,6 +41,7 @@ class BillingOnboardingTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Finish your account setup');
+        $response->assertSee('7-day free trial');
     }
 
     public function test_checkout_redirects_to_stripe_url(): void

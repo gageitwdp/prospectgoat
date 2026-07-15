@@ -97,6 +97,27 @@ class ProfileTest extends TestCase
         $response->assertSee('Subscription Management');
     }
 
+    public function test_owner_profile_shows_trial_end_date_when_account_is_trialing(): void
+    {
+        $trialEnd = now()->addDays(7)->startOfDay();
+
+        $owner = User::factory()->create([
+            'role' => 'owner',
+            'account_id' => Account::factory()->create([
+                'billing_status' => Account::BILLING_STATUS_TRIALING,
+                'trial_ends_at' => $trialEnd,
+            ])->id,
+        ]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->get('/profile');
+
+        $response->assertOk();
+        $response->assertSee('Trial Ends');
+        $response->assertSee($trialEnd->format('M d, Y'));
+    }
+
     public function test_agent_profile_does_not_show_subscription_management_section(): void
     {
         $agent = User::factory()->create(['role' => 'agent']);

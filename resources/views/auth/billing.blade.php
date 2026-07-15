@@ -1,4 +1,8 @@
 <x-guest-layout>
+    @php
+        $trialDays = (int) config('services.stripe.trial_days', 0);
+    @endphp
+
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     @if (request()->boolean('canceled'))
@@ -19,6 +23,11 @@
         <div class="rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] px-4 py-4 text-sm lp-muted">
             <p class="font-semibold text-[var(--lp-primary)]">What happens next</p>
             <p class="mt-2">You will be sent to Stripe Checkout to add your card and start the Single Agent subscription.</p>
+            @if ($trialDays > 0)
+                <p class="mt-2 font-medium text-[var(--lp-primary)]">
+                    Includes a {{ $trialDays }}-day free trial before your first charge.
+                </p>
+            @endif
         </div>
 
         @if ($isStripeConfigured)

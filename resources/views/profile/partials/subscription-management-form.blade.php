@@ -15,6 +15,7 @@
         ];
         $currentPlan = $account?->service_level ? ($planLabels[$account->service_level] ?? ucfirst(str_replace('_', ' ', $account->service_level))) : 'Not set';
         $billingStatus = $account?->billing_status ? ($billingLabels[$account->billing_status] ?? ucfirst(str_replace('_', ' ', $account->billing_status))) : 'Unknown';
+        $trialEndsAt = $account?->trial_ends_at;
     @endphp
 
     <header>
@@ -37,6 +38,13 @@
                     <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Billing Status</dt>
                     <dd class="mt-1 font-medium text-gray-900">{{ $billingStatus }}</dd>
                 </div>
+
+                @if ($trialEndsAt)
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Trial Ends</dt>
+                        <dd class="mt-1 font-medium text-gray-900">{{ $trialEndsAt->format('M d, Y') }}</dd>
+                    </div>
+                @endif
             </dl>
         </div>
     </header>

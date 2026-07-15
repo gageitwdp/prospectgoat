@@ -8,6 +8,15 @@
             $shareUrl = url()->current();
             $shareTitle = config('app.name', 'ProspectGoat Portal');
             $shareDescription = 'Secure access for the ProspectGoat portal.';
+            $heading = match (request()->route()?->getName()) {
+                'login' => 'Login',
+                'register' => 'Sign Up',
+                'password.request' => 'Forgot Password',
+                'password.reset' => 'Reset Password',
+                'password.confirm' => 'Confirm Password',
+                'verification.notice' => 'Verify Email',
+                default => config('app.name', 'ProspectGoat Portal'),
+            };
         @endphp
 
         @include('partials.share-meta')
@@ -24,7 +33,7 @@
             <main class="flex-1 flex flex-col items-center justify-center p-6">
                 <div class="mb-6 text-center">
                     <a href="/" class="text-xs uppercase tracking-[0.25em] lp-muted">ProspectGoat</a>
-                    <p class="lp-title text-2xl font-semibold">Sign Up</p>
+                    <p class="lp-title text-2xl font-semibold">{{ $heading }}</p>
                 </div>
 
                 <div class="lp-card w-full max-w-md px-6 py-6">

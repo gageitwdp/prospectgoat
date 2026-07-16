@@ -91,7 +91,7 @@ Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('a
         Route::put('/events/{event}', [AdminEventController::class, 'update'])->name('events.update');
     });
 
-    Route::middleware('module.enabled:lead_import')->group(function () {
+    Route::middleware('module.enabled:lead_management')->group(function () {
         Route::get('/imports/leads', [LeadImportController::class, 'index'])->name('imports.leads.index');
         Route::get('/imports/leads/template', [LeadImportController::class, 'downloadTemplate'])->name('imports.leads.template');
         Route::get('/imports/leads/export', [LeadImportController::class, 'export'])->name('imports.leads.export');

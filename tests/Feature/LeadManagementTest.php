@@ -352,6 +352,16 @@ class LeadManagementTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_owner_can_see_import_leads_button_on_lead_management_page(): void
+    {
+        $user = User::factory()->create(['role' => 'owner']);
+
+        $response = $this->actingAs($user)->get(route('manager.leads.index'));
+
+        $response->assertOk();
+        $response->assertSee('Import Leads');
+    }
+
     public function test_manager_can_view_pipeline_board(): void
     {
         $manager = User::factory()->create(['role' => 'agent']);

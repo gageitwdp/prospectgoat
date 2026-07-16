@@ -17,25 +17,21 @@ class PlanModuleVisibilityService
                 'label' => 'Lead Management',
                 'description' => 'Review leads, monitor pipeline stages, and coordinate follow-up tasks.',
             ],
-            'events' => [
-                'label' => 'Events',
-                'description' => 'Create, edit, and manage event listings and registrations.',
-            ],
-            'user_management' => [
-                'label' => 'User Management',
-                'description' => 'Manage owner, manager, and agent access and role assignments.',
-            ],
-            'lead_import' => [
-                'label' => 'Import Leads',
-                'description' => 'Download the CSV template and import lead data in bulk.',
-            ],
             'prospecting_tool' => [
                 'label' => 'Prospecting Tool',
                 'description' => 'Review prospect cards and save qualified leads.',
             ],
+            'events' => [
+                'label' => 'Events',
+                'description' => 'Create, edit, and manage event listings and registrations.',
+            ],
             'email_templates' => [
                 'label' => 'Email Templates',
                 'description' => 'Edit and test template-driven outbound and intake emails.',
+            ],
+            'user_management' => [
+                'label' => 'User Management',
+                'description' => 'Manage owner, manager, and agent access and role assignments.',
             ],
         ];
     }

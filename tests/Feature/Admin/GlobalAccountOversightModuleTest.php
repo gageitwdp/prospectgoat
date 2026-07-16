@@ -39,6 +39,8 @@ class GlobalAccountOversightModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Global Account Oversight');
+        $response->assertSee('Analytics');
+        $response->assertSee('Marketing');
     }
 
     public function test_non_global_admin_sidebar_hides_global_account_oversight_module_link(): void
@@ -49,6 +51,8 @@ class GlobalAccountOversightModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Global Account Oversight');
+        $response->assertDontSee('Analytics');
+        $response->assertDontSee('Marketing');
     }
 
     public function test_global_admin_oversight_shows_fallback_when_plan_has_no_enabled_modules(): void
@@ -64,11 +68,10 @@ class GlobalAccountOversightModuleTest extends TestCase
 
         foreach ([
             'lead_management',
-            'events',
-            'user_management',
-            'lead_import',
             'prospecting_tool',
+            'events',
             'email_templates',
+            'user_management',
         ] as $moduleKey) {
             PlanModuleVisibility::query()->updateOrCreate(
                 [

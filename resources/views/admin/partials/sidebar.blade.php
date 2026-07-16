@@ -11,27 +11,6 @@
             'module_key' => 'lead_management',
         ],
         [
-            'label' => 'Events',
-            'route' => route('admin.events.index'),
-            'active' => request()->routeIs('admin.events.*'),
-            'status' => 'Live',
-            'module_key' => 'events',
-        ],
-        [
-            'label' => 'User Management',
-            'route' => route('admin.users.index'),
-            'active' => request()->routeIs('admin.users.*'),
-            'status' => 'Live',
-            'module_key' => 'user_management',
-        ],
-        [
-            'label' => 'Import Leads',
-            'route' => route('admin.imports.leads.index'),
-            'active' => request()->routeIs('admin.imports.leads.*'),
-            'status' => 'Live',
-            'module_key' => 'lead_import',
-        ],
-        [
             'label' => 'Prospecting Tool',
             'route' => route('admin.prospecting.index'),
             'active' => request()->routeIs('admin.prospecting.*'),
@@ -39,23 +18,18 @@
             'module_key' => 'prospecting_tool',
         ],
         [
+            'label' => 'Events',
+            'route' => route('admin.events.index'),
+            'active' => request()->routeIs('admin.events.*'),
+            'status' => 'Live',
+            'module_key' => 'events',
+        ],
+        [
             'label' => 'Email Templates',
             'route' => route('admin.email-templates.index'),
             'active' => request()->routeIs('admin.email-templates.*'),
             'status' => 'Live',
             'module_key' => 'email_templates',
-        ],
-        [
-            'label' => 'Analytics',
-            'route' => null,
-            'active' => false,
-            'status' => 'Soon',
-        ],
-        [
-            'label' => 'Marketing',
-            'route' => null,
-            'active' => false,
-            'status' => 'Soon',
         ],
     ];
 
@@ -68,10 +42,40 @@
         ];
 
         $navItems[] = [
+            'label' => 'User Management',
+            'route' => route('admin.users.index'),
+            'active' => request()->routeIs('admin.users.*'),
+            'status' => 'Live',
+            'module_key' => 'user_management',
+        ];
+
+        $navItems[] = [
             'label' => 'Plan Module Visibility',
             'route' => route('admin.plan-module-visibility.index'),
             'active' => request()->routeIs('admin.plan-module-visibility.*'),
             'status' => 'Live',
+        ];
+
+        $navItems[] = [
+            'label' => 'Analytics',
+            'route' => null,
+            'active' => false,
+            'status' => 'Soon',
+        ];
+
+        $navItems[] = [
+            'label' => 'Marketing',
+            'route' => null,
+            'active' => false,
+            'status' => 'Soon',
+        ];
+    } else {
+        $navItems[] = [
+            'label' => 'User Management',
+            'route' => route('admin.users.index'),
+            'active' => request()->routeIs('admin.users.*'),
+            'status' => 'Live',
+            'module_key' => 'user_management',
         ];
     }
 

@@ -21,6 +21,10 @@ class ProspectingToolTest extends TestCase
         $response->assertOk();
         $response->assertSee('Prospect Lead Import');
         $response->assertSee('BeenVerified Lookup');
+        $response->assertSee('Scripts');
+        $response->assertSee('Expired Script');
+        $response->assertSee('Add New Script');
+        $response->assertSee('I noticed your home was listed on the market and recently expired.');
     }
 
     public function test_agent_cannot_access_prospecting_module(): void

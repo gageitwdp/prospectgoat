@@ -153,6 +153,55 @@
                     <p class="mt-2 text-xs lp-muted" x-show="savedRows[currentIndex]" x-cloak>This card has already been saved in this session.</p>
                 </article>
 
+                <article class="lp-card p-6 sm:p-8" x-show="rows.length > 0" x-cloak>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.2em] lp-muted">Scripts</p>
+                            <h2 class="mt-1 text-2xl font-semibold lp-title">Prospecting Script Library</h2>
+                        </div>
+
+                        <button type="button" class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary" @click="addScript()">
+                            Add New Script
+                        </button>
+                    </div>
+
+                    <div class="mt-6 flex flex-wrap gap-2 border-b border-[var(--lp-border)] pb-3">
+                        <template x-for="(script, index) in scripts" :key="script.id">
+                            <button
+                                type="button"
+                                class="rounded-t-lg border px-4 py-2 text-sm font-medium transition"
+                                :class="activeScriptIndex === index ? 'border-[var(--lp-secondary)] bg-[var(--lp-secondary)] text-white' : 'border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'"
+                                @click="activeScriptIndex = index"
+                                x-text="script.name"
+                            ></button>
+                        </template>
+                    </div>
+
+                    <div class="mt-6 grid gap-6 lg:grid-cols-[1fr,320px]" x-show="activeScript" x-cloak>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="mb-1 block text-sm font-medium lp-title">Script Name</label>
+                                <input type="text" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" x-model="scripts[activeScriptIndex].name" />
+                            </div>
+
+                            <div>
+                                <label class="mb-1 block text-sm font-medium lp-title">Script Content</label>
+                                <textarea
+                                    rows="12"
+                                    class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-3 text-sm leading-6"
+                                    x-model="scripts[activeScriptIndex].content"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
+                            <p class="text-xs uppercase tracking-[0.12em] lp-muted">Preview</p>
+                            <p class="mt-2 text-sm font-medium lp-title" x-text="activeScript?.name || 'Script'"></p>
+                            <pre class="mt-3 whitespace-pre-wrap break-words text-sm leading-6 lp-muted" x-text="activeScript?.content || ''"></pre>
+                        </div>
+                    </div>
+                </article>
+
                 <article class="lp-card p-6 sm:p-8" x-show="rows.length === 0" x-cloak>
                     <p class="text-sm lp-muted">
                         Upload your prospect CSV to begin reviewing one card at a time.
@@ -191,6 +240,27 @@
                 rows: [],
                 currentIndex: 0,
                 edits: {},
+                scripts: [
+                    {
+                        id: 'expired-script',
+                        name: 'Expired Script',
+                        content: `I noticed your home was listed on the market and recently expired.
+
+Out of curiosity, Why do you think it didn't sell?
+
+I specialize in getting expired listings to sell by evaluating what went wrong and fixing that. 
+
+Are you still interested in selling ?
+
+If I can show you a different strategy on how to get your home sold will you take some time to sit down with me and go over the details?
+
+I'm available  Friday at 3pm or Saturday at Noon. 
+
+Which time works best for you ?`,
+                    },
+                ],
+                activeScriptIndex: 0,
+                nextScriptNumber: 2,
                 savedRows: {},
                 loadingParse: false,
                 savingLead: false,
@@ -208,6 +278,10 @@
 
                 get currentRow() {
                     return this.rows[this.currentIndex] || null;
+                },
+
+                get activeScript() {
+                    return this.scripts[this.activeScriptIndex] || null;
                 },
 
                 currentEdit() {
@@ -245,6 +319,19 @@
                 clearCopyMessages() {
                     this.copySuccess = '';
                     this.copyError = '';
+                },
+
+                addScript() {
+                    const scriptNumber = this.nextScriptNumber;
+
+                    this.scripts.push({
+                        id: `script-${scriptNumber}`,
+                        name: `New Script ${scriptNumber}`,
+                        content: '',
+                    });
+
+                    this.activeScriptIndex = this.scripts.length - 1;
+                    this.nextScriptNumber += 1;
                 },
 
                 async copyField(value, label) {

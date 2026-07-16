@@ -1,5 +1,5 @@
 @php
-    $shareImagePath = 'favicon.ico';
+    $shareImagePath = 'prospectgoat_favicon.png';
     $shareImage = url('/' . rawurlencode($shareImagePath));
     $shareUrl = $shareUrl ?? url()->current();
     $shareTitle = $shareTitle ?? config('app.name', 'ProspectGoat');

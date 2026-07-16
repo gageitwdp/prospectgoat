@@ -6,11 +6,16 @@
                 <p class="text-sm lp-muted">Track, assign, and advance every lead.</p>
             </div>
 
-            @if (auth()->user()?->isOwner())
-                <a href="{{ route('admin.imports.leads.index') }}" class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary">
-                    Import Leads
+            <div class="flex items-center gap-2">
+                <a href="{{ route('manager.leads.export', request()->query()) }}" class="inline-flex items-center justify-center rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]">
+                    Export Leads
                 </a>
-            @endif
+                @if (auth()->user()?->isOwner())
+                    <a href="{{ route('admin.imports.leads.index') }}" class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary">
+                        Import Leads
+                    </a>
+                @endif
+            </div>
         </div>
     </x-slot>
 

@@ -362,6 +362,71 @@ class LeadManagementTest extends TestCase
         $response->assertSee('Import Leads');
     }
 
+    public function test_agent_can_export_leads_from_lead_management(): void
+    {
+        $agent = User::factory()->create(['role' => 'agent']);
+        $assignee = User::factory()->create([
+            'role' => 'agent',
+            'email' => 'assigned-manager@example.com',
+        ]);
+
+        Lead::create([
+            'name' => 'Agent Export Lead',
+            'email' => 'agent-export@example.com',
+            'phone' => '555-2111',
+            'address' => '101 Export St',
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'new',
+            'assigned_to' => $assignee->id,
+        ]);
+
+        $response = $this->actingAs($agent)->get(route('manager.leads.export'));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $response->assertSee('id,name,email,phone,address,lead_type,source,status,assigned_email,created_at,updated_at');
+        $response->assertSee('Agent Export Lead');
+        $response->assertSee('assigned-manager@example.com');
+    }
+
+    public function test_lead_management_export_respects_active_filters(): void
+    {
+        $agent = User::factory()->create(['role' => 'agent']);
+
+        Lead::create([
+            'name' => 'Filtered Lead Match',
+            'email' => 'filtered-match@example.com',
+            'phone' => '555-2112',
+            'address' => null,
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'new',
+            'assigned_to' => null,
+        ]);
+
+        Lead::create([
+            'name' => 'Filtered Lead Skip',
+            'email' => 'filtered-skip@example.com',
+            'phone' => '555-2113',
+            'address' => null,
+            'lead_type' => 'seller',
+            'source' => 'referral',
+            'status' => 'closed',
+            'assigned_to' => null,
+        ]);
+
+        $response = $this->actingAs($agent)->get(route('manager.leads.export', [
+            'status' => 'new',
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Filtered Lead Match');
+        $response->assertDontSee('Filtered Lead Skip');
+    }
+
     public function test_manager_can_view_pipeline_board(): void
     {
         $manager = User::factory()->create(['role' => 'agent']);

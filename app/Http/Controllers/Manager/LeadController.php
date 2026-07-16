@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadAssignmentChangedNotification;
+use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -117,6 +118,68 @@ class LeadController extends Controller
             ->get(['id', 'name', 'role']);
 
         return view('manager.leads.index', compact('leads', 'managers', 'visibility'));
+    }
+
+    public function export(Request $request): Response
+    {
+        $visibility = $request->string('visibility')->toString();
+
+        $query = Lead::query()
+            ->tap(fn ($query) => $this->scopeLeadsToAccount($query))
+            ->with('assignedManager')
+            ->orderBy('id');
+
+        if ($visibility === 'deleted') {
+            $query->onlyTrashed();
+        } elseif ($visibility === 'all') {
+            $query->withTrashed();
+        }
+
+        $leads = $query
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('lead_type'), fn ($q) => $q->where('lead_type', $request->string('lead_type')))
+            ->when($request->filled('source'), fn ($q) => $q->where('source', $request->string('source')))
+            ->when($request->filled('assigned_to'), fn ($q) => $q->where('assigned_to', $request->integer('assigned_to')))
+            ->get();
+
+        $columns = [
+            'id',
+            'name',
+            'email',
+            'phone',
+            'address',
+            'lead_type',
+            'source',
+            'status',
+            'assigned_email',
+            'created_at',
+            'updated_at',
+        ];
+
+        $lines = [implode(',', $columns)];
+
+        foreach ($leads as $lead) {
+            $lines[] = $this->toCsvRow([
+                $lead->id,
+                $lead->name,
+                $lead->email,
+                $lead->phone,
+                $lead->address,
+                $lead->lead_type,
+                $lead->source,
+                $lead->status,
+                $lead->assignedManager?->email,
+                $lead->created_at?->toDateTimeString(),
+                $lead->updated_at?->toDateTimeString(),
+            ]);
+        }
+
+        $csv = implode("\n", $lines)."\n";
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="lead-export.csv"',
+        ]);
     }
 
     public function show(Lead $lead): View
@@ -312,5 +375,20 @@ class LeadController extends Controller
                 'status' => sprintf('Invalid status transition from %s to %s.', $from, $to),
             ]);
         }
+    }
+
+    /**
+     * @param  array<int, mixed>  $values
+     */
+    private function toCsvRow(array $values): string
+    {
+        $escaped = array_map(function ($value): string {
+            $string = (string) ($value ?? '');
+            $string = str_replace('"', '""', $string);
+
+            return '"'.$string.'"';
+        }, $values);
+
+        return implode(',', $escaped);
     }
 }

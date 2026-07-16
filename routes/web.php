@@ -67,6 +67,7 @@ Route::post('/mortgage-calculator/send-results', [MortgageCalculatorController::
 Route::middleware(['auth', 'billing.active', 'manager', 'module.enabled:lead_management'])->prefix('manager')->name('manager.')->group(function () {
     Route::get('/leads/pipeline', [LeadController::class, 'pipeline'])->name('leads.pipeline');
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::get('/leads/export', [LeadController::class, 'export'])->name('leads.export');
     Route::delete('/leads/bulk-destroy', [LeadController::class, 'bulkDestroy'])->middleware('admin')->name('leads.bulk-destroy');
     Route::patch('/leads/bulk-restore', [LeadController::class, 'bulkRestore'])->middleware('admin')->name('leads.bulk-restore');
     Route::patch('/leads/{leadId}/restore', [LeadController::class, 'restore'])->middleware('admin')->name('leads.restore');

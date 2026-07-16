@@ -4,7 +4,10 @@ namespace App\Services\Billing;
 
 use App\Models\Account;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use RuntimeException;
+use Stripe\Checkout\Session;
+use Stripe\Subscription;
 use Stripe\StripeClient;
 
 class StripeBillingService
@@ -58,6 +61,51 @@ class StripeBillingService
         return $session->url;
     }
 
+    public function completeCheckoutSession(Account $account, string $sessionId): void
+    {
+        $this->guardConfigured();
+
+        $session = $this->client()->checkout->sessions->retrieve($sessionId, [
+            'expand' => ['subscription'],
+        ]);
+
+        if (! $session instanceof Session) {
+            throw new RuntimeException('Stripe did not return a checkout session.');
+        }
+
+        $metadataAccountId = (int) ($session->metadata->account_id ?? 0);
+
+        if ($metadataAccountId > 0 && $metadataAccountId !== $account->id) {
+            throw new RuntimeException('Stripe checkout session does not belong to this account.');
+        }
+
+        $customerId = is_string($session->customer ?? null) ? $session->customer : null;
+        $subscription = $session->subscription ?? null;
+
+        if (is_string($subscription) && $subscription !== '') {
+            $subscription = $this->client()->subscriptions->retrieve($subscription, []);
+        }
+
+        if (! $subscription instanceof Subscription) {
+            throw new RuntimeException('Stripe did not return a subscription for this checkout session.');
+        }
+
+        $trialEnd = $subscription->trial_end ?? null;
+        $trialEndsAt = is_numeric($trialEnd)
+            ? Carbon::createFromTimestamp((int) $trialEnd)
+            : null;
+
+        $account->forceFill([
+            'stripe_customer_id' => $customerId ?: $account->stripe_customer_id,
+            'stripe_subscription_id' => $subscription->id ?: $account->stripe_subscription_id,
+            'billing_status' => $this->mapBillingStatus((string) ($subscription->status ?? '')),
+            'trial_ends_at' => $trialEndsAt,
+            'last_billing_sync_at' => now(),
+            'last_billing_event_type' => 'checkout.session.completed',
+            'last_billing_event_id' => $session->id,
+        ])->save();
+    }
+
     public function canOpenCustomerPortal(Account $account): bool
     {
         return class_exists(StripeClient::class)
@@ -101,7 +149,7 @@ class StripeBillingService
         return $customer->id;
     }
 
-    private function mapBillingStatus(?string $status): string
+    private function mapBillingStatus(string $status): string
     {
         return match ($status) {
             'active' => Account::BILLING_STATUS_ACTIVE,
@@ -123,7 +171,7 @@ class StripeBillingService
         }
     }
 
-    private function client(): StripeClient
+    protected function client()
     {
         return new StripeClient((string) config('services.stripe.secret'));
     }

@@ -16,7 +16,7 @@
             <p class="text-sm font-semibold uppercase tracking-[0.2em] lp-muted">Single Agent Plan</p>
             <h2 class="mt-2 text-xl font-semibold lp-title">Finish your account setup</h2>
             <p class="mt-2 text-sm lp-muted">
-                Your account has been created. The next step is collecting your payment details securely with Stripe before app access is enabled.
+                Your account has been created. The next step is collecting your payment details securely with Stripe so your 7-day trial can start and app access can be enabled.
             </p>
         </div>
 
@@ -25,7 +25,7 @@
             <p class="mt-2">You will be sent to Stripe Checkout to add your card and start the Single Agent subscription.</p>
             @if ($trialDays > 0)
                 <p class="mt-2 font-medium text-[var(--lp-primary)]">
-                    Includes a {{ $trialDays }}-day free trial before your first charge.
+                    Includes a {{ $trialDays }}-day trial before your first charge.
                 </p>
             @endif
         </div>

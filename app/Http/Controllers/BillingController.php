@@ -73,8 +73,16 @@ class BillingController extends Controller
                 ->with('status', 'Billing session was not returned correctly. Please try checkout again.');
         }
 
+        $this->billing->completeCheckoutSession($account, $sessionId);
+
+        if (! $account->fresh()->hasActiveBilling()) {
+            return redirect()
+                ->route('billing.collect')
+                ->with('status', 'Billing was received, but access is still syncing. Please try again in a moment.');
+        }
+
         return redirect()
             ->route('dashboard')
-            ->with('status', 'Billing confirmation received. Access will update once Stripe finalizes your payment.');
+            ->with('status', 'Billing confirmation received. You can now continue into Prospect GOAT.');
     }
 }

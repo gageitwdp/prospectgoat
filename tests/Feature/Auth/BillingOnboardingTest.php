@@ -41,7 +41,7 @@ class BillingOnboardingTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Finish your account setup');
-        $response->assertSee('7-day free trial');
+        $response->assertSee('7-day trial');
     }
 
     public function test_checkout_redirects_to_stripe_url(): void
@@ -62,22 +62,45 @@ class BillingOnboardingTest extends TestCase
         $response->assertRedirect('https://checkout.stripe.com/test-session');
     }
 
-    public function test_success_redirects_to_dashboard_and_defers_activation_to_webhook(): void
+    public function test_success_redirects_to_dashboard_after_syncing_billing_state(): void
     {
         $user = User::factory()->create();
-        $user->account()->update(['billing_status' => Account::BILLING_STATUS_PENDING]);
+        $account = $user->account()->getResults();
+        $account->forceFill(['billing_status' => Account::BILLING_STATUS_PENDING])->save();
 
-        $this->mock(StripeBillingService::class, function ($mock): void {
-            $mock->shouldNotReceive('completeCheckoutSession');
+        $this->mock(StripeBillingService::class, function ($mock) use ($account): void {
+            $mock->shouldReceive('completeCheckoutSession')
+                ->once()
+                ->withArgs(fn (Account $passedAccount, string $sessionId) => $passedAccount->is($account) && $sessionId === 'cs_test_123')
+                ->andReturnUsing(function (Account $passedAccount): void {
+                    $passedAccount->forceFill([
+                        'billing_status' => Account::BILLING_STATUS_TRIALING,
+                        'stripe_customer_id' => 'cus_test_123',
+                        'stripe_subscription_id' => 'sub_test_123',
+                    ])->save();
+                });
         });
 
         $response = $this->actingAs($user)->get(route('billing.success', ['session_id' => 'cs_test_123']));
 
         $response->assertRedirect(route('dashboard'));
-        $response->assertSessionHas('status', 'Billing confirmation received. Access will update once Stripe finalizes your payment.');
+        $response->assertSessionHas('status', 'Billing confirmation received. You can now continue into Prospect GOAT.');
         $this->assertDatabaseHas('accounts', [
-            'id' => $user->account->id,
-            'billing_status' => Account::BILLING_STATUS_PENDING,
+            'id' => $account->id,
+            'billing_status' => Account::BILLING_STATUS_TRIALING,
+            'stripe_customer_id' => 'cus_test_123',
+            'stripe_subscription_id' => 'sub_test_123',
         ]);
+    }
+
+    public function test_success_redirects_back_to_billing_when_session_placeholder_is_returned(): void
+    {
+        $user = User::factory()->create();
+        $user->account()->update(['billing_status' => Account::BILLING_STATUS_PENDING]);
+
+        $response = $this->actingAs($user)->get(route('billing.success', ['session_id' => 'CHECKOUT_SESSION_ID']));
+
+        $response->assertRedirect(route('billing.collect'));
+        $response->assertSessionHas('status', 'Billing session was not returned correctly. Please try checkout again.');
     }
 }

@@ -159,6 +159,15 @@
                             <p class="text-xs uppercase tracking-[0.2em] lp-muted">Scripts</p>
                             <h2 class="mt-1 text-2xl font-semibold lp-title">Prospecting Script Library</h2>
                         </div>
+
+                        <button
+                            type="button"
+                            class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary"
+                            @click="openScriptContentModal()"
+                            :disabled="!activeScript"
+                        >
+                            Edit Script Content
+                        </button>
                     </div>
 
                     <div class="mt-6 flex flex-wrap gap-2 border-b border-[var(--lp-border)] pb-3">
@@ -178,11 +187,6 @@
                             <p class="text-xs uppercase tracking-[0.12em] lp-muted">Preview</p>
                             <p class="mt-2 text-sm font-medium lp-title" x-text="activeScript?.name || 'Script'"></p>
                             <pre class="mt-3 whitespace-pre-wrap break-words text-sm leading-6 lp-muted" x-text="activeScript?.content || ''"></pre>
-                            <div class="mt-4">
-                                <button type="button" class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary" @click="openScriptContentModal()">
-                                    Edit Script Content
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </article>

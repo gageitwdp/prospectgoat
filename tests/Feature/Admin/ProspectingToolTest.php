@@ -311,6 +311,66 @@ CSV;
         $this->assertSame(1, $session->state['current_index']);
     }
 
+    public function test_admin_can_update_current_card_index_without_resending_rows(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        ProspectingSession::query()->create([
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'csv_filename' => 'existing-prospects.csv',
+            'state' => [
+                'rows' => [
+                    [
+                        'line' => 2,
+                        'owner_full_name' => 'Existing Owner One',
+                        'property_full_address' => '101 Existing St, Marietta, GA 30062',
+                        'property_address' => '101 Existing St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                    [
+                        'line' => 3,
+                        'owner_full_name' => 'Existing Owner Two',
+                        'property_full_address' => '202 Existing St, Marietta, GA 30062',
+                        'property_address' => '202 Existing St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                ],
+                'current_index' => 0,
+                'edits' => [
+                    '0' => [
+                        'phone' => '404-555-1000',
+                        'email' => 'existing1@example.com',
+                    ],
+                ],
+                'saved_rows' => ['0' => true],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.session-state'), [
+                'current_index' => 1,
+            ]);
+
+        $response->assertOk();
+
+        $session = ProspectingSession::query()
+            ->where('account_id', $admin->account_id)
+            ->where('user_id', $admin->id)
+            ->first();
+
+        $this->assertNotNull($session);
+        $this->assertSame(1, $session->state['current_index']);
+        $this->assertCount(2, $session->state['rows']);
+        $this->assertSame('Existing Owner Two', $session->state['rows'][1]['owner_full_name']);
+    }
+
     public function test_parse_fails_when_required_columns_are_missing(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

@@ -149,15 +149,27 @@ class ProspectingController extends Controller
 
         $data = $request->validate([
             'csv_filename' => ['nullable', 'string', 'max:255'],
-            'rows' => ['required', 'array'],
+            'rows' => ['sometimes', 'array'],
             'current_index' => ['required', 'integer', 'min:0'],
-            'edits' => ['required', 'array'],
-            'saved_rows' => ['required', 'array'],
+            'edits' => ['sometimes', 'array'],
+            'saved_rows' => ['sometimes', 'array'],
         ]);
 
-        $rows = array_values($data['rows']);
+        $existingSession = ProspectingSession::query()
+            ->where('account_id', $accountId)
+            ->where('user_id', $userId)
+            ->first();
+
+        $existingState = is_array($existingSession?->state) ? $existingSession->state : [];
+
+        $rows = array_values($data['rows'] ?? (is_array($existingState['rows'] ?? null) ? $existingState['rows'] : []));
         $maxIndex = max(0, count($rows) - 1);
         $currentIndex = count($rows) === 0 ? 0 : min((int) $data['current_index'], $maxIndex);
+        $edits = $data['edits'] ?? (is_array($existingState['edits'] ?? null) ? $existingState['edits'] : []);
+        $savedRows = $data['saved_rows'] ?? (is_array($existingState['saved_rows'] ?? null) ? $existingState['saved_rows'] : []);
+        $csvFilename = array_key_exists('csv_filename', $data)
+            ? (string) ($data['csv_filename'] ?? '')
+            : (string) ($existingSession?->csv_filename ?? '');
 
         $this->upsertProspectingSession(
             $accountId,
@@ -165,10 +177,10 @@ class ProspectingController extends Controller
             [
                 'rows' => $rows,
                 'current_index' => $currentIndex,
-                'edits' => $data['edits'],
-                'saved_rows' => $data['saved_rows'],
+                'edits' => $edits,
+                'saved_rows' => $savedRows,
             ],
-            (string) ($data['csv_filename'] ?? ''),
+            $csvFilename,
         );
 
         return response()->json([

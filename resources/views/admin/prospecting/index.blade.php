@@ -397,7 +397,6 @@
                             },
                             body: JSON.stringify({
                                 csv_filename: this.loadedFileName || null,
-                                rows: this.rows,
                                 current_index: this.currentIndex,
                                 edits: this.edits,
                                 saved_rows: this.savedRows,
@@ -522,7 +521,7 @@
                         this.saveSuccess = '';
                         this.saveError = '';
                         this.clearCopyMessages();
-                        this.scheduleSessionPersist();
+                        this.persistSessionState();
                     }
                 },
 
@@ -532,7 +531,7 @@
                         this.saveSuccess = '';
                         this.saveError = '';
                         this.clearCopyMessages();
-                        this.scheduleSessionPersist();
+                        this.persistSessionState();
                     }
                 },
 

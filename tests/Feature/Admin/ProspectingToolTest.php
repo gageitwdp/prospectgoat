@@ -170,6 +170,56 @@ CSV;
         ]);
     }
 
+    public function test_admin_persists_current_card_index_in_session_state(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.session-state'), [
+                'csv_filename' => 'prospects-september.csv',
+                'rows' => [
+                    [
+                        'line' => 2,
+                        'owner_full_name' => 'Owner One',
+                        'property_full_address' => '111 First St, Marietta, GA 30062',
+                        'property_address' => '111 First St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                    [
+                        'line' => 3,
+                        'owner_full_name' => 'Owner Two',
+                        'property_full_address' => '222 Second St, Marietta, GA 30062',
+                        'property_address' => '222 Second St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                ],
+                'current_index' => 1,
+                'edits' => [
+                    '1' => [
+                        'phone' => '404-555-3333',
+                        'email' => 'owner2@example.com',
+                    ],
+                ],
+                'saved_rows' => ['1' => true],
+            ]);
+
+        $response->assertOk();
+
+        $session = ProspectingSession::query()
+            ->where('account_id', $admin->account_id)
+            ->where('user_id', $admin->id)
+            ->first();
+
+        $this->assertNotNull($session);
+        $this->assertSame(1, $session->state['current_index']);
+    }
+
     public function test_parse_fails_when_required_columns_are_missing(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

@@ -258,6 +258,7 @@
                 savingLead: false,
                 savingSessionState: false,
                 persistTimer: null,
+                hideHandler: null,
                 parseSuccess: '',
                 parseError: '',
                 saveSuccess: '',
@@ -274,6 +275,17 @@
 
                 init() {
                     this.restoreSessionState();
+
+                    this.hideHandler = () => {
+                        this.persistSessionState({ useKeepalive: true });
+                    };
+
+                    window.addEventListener('pagehide', this.hideHandler);
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'hidden') {
+                            this.hideHandler();
+                        }
+                    });
                 },
 
                 get currentRow() {
@@ -360,7 +372,9 @@
                     }, 250);
                 },
 
-                async persistSessionState() {
+                async persistSessionState(options = {}) {
+                    const useKeepalive = options.useKeepalive === true;
+
                     if (this.savingSessionState) {
                         return;
                     }
@@ -370,6 +384,7 @@
                     try {
                         await fetch(this.sessionStateUrl, {
                             method: 'POST',
+                            keepalive: useKeepalive,
                             headers: {
                                 'X-CSRF-TOKEN': this.csrfToken,
                                 'Accept': 'application/json',

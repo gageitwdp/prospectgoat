@@ -12,6 +12,11 @@ use Illuminate\View\View;
 
 class LeadImportController extends Controller
 {
+    public function __construct()
+    {
+        abort_if($this->currentUserIsGlobalAdmin(), 403);
+    }
+
     private const TEMPLATE_COLUMNS = [
         'first_name',
         'last_name',
@@ -63,14 +68,7 @@ class LeadImportController extends Controller
         $lines = [implode(',', $columns)];
 
         $leads = Lead::query()
-            ->when(
-                ! $this->currentUserIsGlobalAdmin(),
-                fn ($query) => $query->where(function ($inner) {
-                    $accountId = $this->requireCurrentAccountId();
-                    $inner->where('account_id', $accountId)
-                        ->orWhereNull('account_id');
-                })
-            )
+            ->where('account_id', $this->requireCurrentAccountId())
             ->with('assignedManager')
             ->orderBy('id')
             ->get();
@@ -167,7 +165,7 @@ class LeadImportController extends Controller
             }
 
             // Import should not trigger lead-created events that may send confirmation emails.
-            $lead = Lead::withoutEvents(function () use ($rowData, $accountId): Lead {
+            $lead = Lead::withoutEvents(function () use ($rowData, $accountId, $request): Lead {
                 return Lead::create([
                     'account_id' => $accountId,
                     'name' => trim($rowData['first_name'].' '.$rowData['last_name']),
@@ -178,6 +176,7 @@ class LeadImportController extends Controller
                     'source' => 'homepage',
                     'status' => 'new',
                     'assigned_to' => null,
+                    'created_by' => $request->user()?->id,
                 ]);
             });
 

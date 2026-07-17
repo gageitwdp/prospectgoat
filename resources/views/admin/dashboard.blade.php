@@ -33,7 +33,7 @@
                     </div>
                     <div class="lp-card p-5">
                         <p class="text-xs uppercase tracking-[0.14em] lp-muted">Total Leads</p>
-                        <p class="mt-2 text-2xl font-semibold lp-title">{{ $metrics['total_leads'] }}</p>
+                        <p class="mt-2 text-2xl font-semibold lp-title">{{ $metrics['total_leads'] ?? 'N/A' }}</p>
                     </div>
                 </div>
 

@@ -11,10 +11,25 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    public function __construct()
+    {
+        abort_if($this->currentUserIsGlobalAdmin(), 403);
+    }
+
     public function store(StoreTaskRequest $request, Lead $lead): RedirectResponse
     {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
         $accountId = $this->requireCurrentAccountId();
-        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
+        abort_unless(
+            Lead::query()
+                ->withTrashed()
+                ->visibleTo($user)
+                ->whereKey($lead->id)
+                ->exists(),
+            404,
+        );
 
         $task = $lead->tasks()->create([
             'account_id' => $lead->account_id ?? $accountId,
@@ -34,10 +49,20 @@ class TaskController extends Controller
 
     public function update(Request $request, Lead $lead, Task $task): RedirectResponse
     {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
         $accountId = $this->requireCurrentAccountId();
 
         abort_unless($task->lead_id === $lead->id, 404);
-        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
+        abort_unless(
+            Lead::query()
+                ->withTrashed()
+                ->visibleTo($user)
+                ->whereKey($lead->id)
+                ->exists(),
+            404,
+        );
         abort_unless($this->inCurrentAccountScope($task->account_id, true), 404);
 
         $data = $request->validate([

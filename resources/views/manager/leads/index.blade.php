@@ -10,7 +10,7 @@
                 <a href="{{ route('manager.leads.export', request()->query()) }}" class="inline-flex items-center justify-center rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]">
                     Export Leads
                 </a>
-                @if (auth()->user()?->isOwner())
+                @if (auth()->user() && ! auth()->user()->isGlobalAdmin())
                     <a href="{{ route('admin.imports.leads.index') }}" class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary">
                         Import Leads
                     </a>
@@ -70,12 +70,12 @@
         </section>
 
         <section class="lp-card overflow-hidden">
-            @if (auth()->user()?->role === 'admin' && ($visibility ?? '') !== 'deleted')
+            @if (auth()->user() && ! auth()->user()->isGlobalAdmin() && ($visibility ?? '') !== 'deleted')
                 <form id="lead-bulk-delete-form" method="POST" action="{{ route('manager.leads.bulk-destroy') }}" onsubmit="return confirm('Delete selected leads and all linked records? This cannot be undone.');" class="hidden">
                     @csrf
                     @method('DELETE')
                 </form>
-            @elseif (auth()->user()?->role === 'admin' && ($visibility ?? '') === 'deleted')
+            @elseif (auth()->user() && ! auth()->user()->isGlobalAdmin() && ($visibility ?? '') === 'deleted')
                 <form id="lead-bulk-restore-form" method="POST" action="{{ route('manager.leads.bulk-restore') }}" onsubmit="return confirm('Restore selected leads?');" class="hidden">
                     @csrf
                     @method('PATCH')
@@ -86,7 +86,7 @@
                 <table class="min-w-full text-sm">
                     <thead>
                         <tr class="border-b border-[var(--lp-border)] bg-[#f9fafb] text-left lp-muted">
-                            @if (auth()->user()?->role === 'admin')
+                            @if (auth()->user() && ! auth()->user()->isGlobalAdmin())
                                 <th class="px-5 py-3 font-medium">
                                     <label class="inline-flex items-center gap-2 text-xs">
                                         <input type="checkbox" id="select-all-leads" class="rounded border-[var(--lp-border)]">
@@ -103,11 +103,11 @@
                             <th class="px-5 py-3 font-medium">State</th>
                             <th class="px-5 py-3 font-medium">
                                 <div class="flex justify-end">
-                                    @if (auth()->user()?->role === 'admin' && ($visibility ?? '') !== 'deleted')
+                                    @if (auth()->user() && ! auth()->user()->isGlobalAdmin() && ($visibility ?? '') !== 'deleted')
                                         <button id="bulk-delete-button" type="submit" form="lead-bulk-delete-form" class="hidden rounded-lg border border-red-300 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
                                             Delete Selected
                                         </button>
-                                    @elseif (auth()->user()?->role === 'admin' && ($visibility ?? '') === 'deleted')
+                                    @elseif (auth()->user() && ! auth()->user()->isGlobalAdmin() && ($visibility ?? '') === 'deleted')
                                         <button type="submit" form="lead-bulk-restore-form" class="rounded-lg border border-emerald-300 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
                                             Restore Selected
                                         </button>
@@ -119,7 +119,7 @@
                     <tbody>
                         @forelse ($leads as $lead)
                             <tr class="border-b border-[var(--lp-border)]">
-                                @if (auth()->user()?->role === 'admin')
+                                @if (auth()->user() && ! auth()->user()->isGlobalAdmin())
                                     <td class="px-5 py-3 align-top">
                                         <input
                                             type="checkbox"
@@ -152,7 +152,7 @@
                                     <div class="flex justify-end gap-2">
                                         @if (! $lead->trashed())
                                             <a href="{{ route('manager.leads.show', $lead) }}" class="rounded-lg border border-[var(--lp-border)] px-3 py-1.5 text-xs font-medium lp-title">Open</a>
-                                            @if (auth()->user()?->role === 'admin')
+                                            @if (auth()->user() && ! auth()->user()->isGlobalAdmin())
                                                 <form method="POST" action="{{ route('manager.leads.destroy', $lead) }}" onsubmit="return confirm('Move this lead to recycle bin?');">
                                                     @csrf
                                                     @method('DELETE')
@@ -161,7 +161,7 @@
                                                     </button>
                                                 </form>
                                             @endif
-                                        @elseif (auth()->user()?->role === 'admin')
+                                        @elseif (auth()->user() && ! auth()->user()->isGlobalAdmin())
                                             <form method="POST" action="{{ route('manager.leads.restore', $lead->id) }}" onsubmit="return confirm('Restore this lead?');">
                                                 @csrf
                                                 @method('PATCH')
@@ -175,7 +175,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ auth()->user()?->role === 'admin' ? '9' : '8' }}" class="px-5 py-8 text-center lp-muted">No leads found for current filters.</td>
+                                <td colspan="{{ auth()->user() && ! auth()->user()->isGlobalAdmin() ? '9' : '8' }}" class="px-5 py-8 text-center lp-muted">No leads found for current filters.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -188,7 +188,7 @@
         </section>
     </div>
 
-    @if (auth()->user()?->role === 'admin')
+    @if (auth()->user() && ! auth()->user()->isGlobalAdmin())
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const selectAll = document.getElementById('select-all-leads');

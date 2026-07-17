@@ -9,10 +9,25 @@ use Illuminate\Http\RedirectResponse;
 
 class LeadActivityController extends Controller
 {
+    public function __construct()
+    {
+        abort_if($this->currentUserIsGlobalAdmin(), 403);
+    }
+
     public function store(StoreLeadActivityRequest $request, Lead $lead): RedirectResponse
     {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
         $accountId = $this->requireCurrentAccountId();
-        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
+        abort_unless(
+            Lead::query()
+                ->withTrashed()
+                ->visibleTo($user)
+                ->whereKey($lead->id)
+                ->exists(),
+            404,
+        );
 
         $lead->activities()->create([
             ...$request->validated(),

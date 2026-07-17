@@ -69,12 +69,12 @@ Route::middleware(['auth', 'billing.active', 'manager', 'module.enabled:lead_man
     Route::get('/leads/pipeline', [LeadController::class, 'pipeline'])->name('leads.pipeline');
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::get('/leads/export', [LeadController::class, 'export'])->name('leads.export');
-    Route::delete('/leads/bulk-destroy', [LeadController::class, 'bulkDestroy'])->middleware('admin')->name('leads.bulk-destroy');
-    Route::patch('/leads/bulk-restore', [LeadController::class, 'bulkRestore'])->middleware('admin')->name('leads.bulk-restore');
-    Route::patch('/leads/{leadId}/restore', [LeadController::class, 'restore'])->middleware('admin')->name('leads.restore');
+    Route::delete('/leads/bulk-destroy', [LeadController::class, 'bulkDestroy'])->name('leads.bulk-destroy');
+    Route::patch('/leads/bulk-restore', [LeadController::class, 'bulkRestore'])->name('leads.bulk-restore');
+    Route::patch('/leads/{leadId}/restore', [LeadController::class, 'restore'])->name('leads.restore');
     Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
-    Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->middleware('admin')->name('leads.destroy');
+    Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
     Route::patch('/leads/{lead}/status', [LeadController::class, 'moveStatus'])->name('leads.status.move');
 
     Route::post('/leads/{lead}/activities', [LeadActivityController::class, 'store'])->name('leads.activities.store');

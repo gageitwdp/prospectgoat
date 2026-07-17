@@ -16,31 +16,37 @@ use Illuminate\View\View;
 
 class LeadController extends Controller
 {
+    public function __construct()
+    {
+        abort_if($this->currentUserIsGlobalAdmin(), 403);
+    }
+
     private function accountId(): int
     {
         return $this->requireCurrentAccountId();
     }
 
-    private function isGlobalAdmin(): bool
+    private function scopeLeadsForCurrentUser($query)
     {
-        return $this->currentUserIsGlobalAdmin();
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        return $query->visibleTo($user);
     }
 
-    private function scopeLeadsToAccount($query)
+    private function ensureLeadAccessible(Lead $lead): void
     {
-        if ($this->isGlobalAdmin()) {
-            return $query;
-        }
+        $user = auth()->user();
+        abort_unless($user, 403);
 
-        return $query->where(function ($inner) {
-            $inner->where('account_id', $this->accountId())
-                ->orWhereNull('account_id');
-        });
-    }
-
-    private function ensureLeadInAccount(Lead $lead): void
-    {
-        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
+        abort_unless(
+            Lead::query()
+                ->withTrashed()
+                ->visibleTo($user)
+                ->whereKey($lead->id)
+                ->exists(),
+            404,
+        );
     }
 
     public function pipeline(Request $request): View
@@ -54,7 +60,7 @@ class LeadController extends Controller
         }
 
         $query = Lead::query()
-            ->tap(fn ($query) => $this->scopeLeadsToAccount($query))
+            ->tap(fn ($query) => $this->scopeLeadsForCurrentUser($query))
             ->with('assignedManager');
 
         if ($period !== 'all') {
@@ -93,7 +99,7 @@ class LeadController extends Controller
         $visibility = $request->string('visibility')->toString();
 
         $query = Lead::query()
-            ->tap(fn ($query) => $this->scopeLeadsToAccount($query))
+            ->tap(fn ($query) => $this->scopeLeadsForCurrentUser($query))
             ->with('assignedManager');
 
         if ($visibility === 'deleted') {
@@ -112,7 +118,7 @@ class LeadController extends Controller
             ->withQueryString();
 
         $managers = User::query()
-            ->when(! $this->isGlobalAdmin(), fn ($query) => $query->where('account_id', $this->accountId()))
+            ->where('account_id', $this->accountId())
             ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
@@ -125,7 +131,7 @@ class LeadController extends Controller
         $visibility = $request->string('visibility')->toString();
 
         $query = Lead::query()
-            ->tap(fn ($query) => $this->scopeLeadsToAccount($query))
+            ->tap(fn ($query) => $this->scopeLeadsForCurrentUser($query))
             ->with('assignedManager')
             ->orderBy('id');
 
@@ -184,7 +190,7 @@ class LeadController extends Controller
 
     public function show(Lead $lead): View
     {
-        $this->ensureLeadInAccount($lead);
+        $this->ensureLeadAccessible($lead);
 
         $lead->load([
             'assignedManager',
@@ -193,7 +199,7 @@ class LeadController extends Controller
         ]);
 
         $managers = User::query()
-            ->when(! $this->isGlobalAdmin(), fn ($query) => $query->where('account_id', $this->accountId()))
+            ->where('account_id', $this->accountId())
             ->whereIn('role', ['owner', 'manager', 'agent'])
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
@@ -203,7 +209,7 @@ class LeadController extends Controller
 
     public function update(UpdateLeadRequest $request, Lead $lead): RedirectResponse
     {
-        $this->ensureLeadInAccount($lead);
+        $this->ensureLeadAccessible($lead);
 
         $data = $request->validated();
 
@@ -224,7 +230,7 @@ class LeadController extends Controller
 
         if ($originalAssigned !== $lead->assigned_to) {
             $from = $originalAssigned
-                ? User::query()->when(! $this->isGlobalAdmin(), fn ($query) => $query->where('account_id', $this->accountId()))->find($originalAssigned)?->name
+                ? User::query()->where('account_id', $this->accountId())->find($originalAssigned)?->name
                 : 'Unassigned';
             $to = $lead->assignedManager?->name ?? 'Unassigned';
 
@@ -248,7 +254,7 @@ class LeadController extends Controller
 
     public function moveStatus(Request $request, Lead $lead): RedirectResponse
     {
-        $this->ensureLeadInAccount($lead);
+        $this->ensureLeadAccessible($lead);
 
         $data = $request->validate([
             'status' => ['required', 'in:new,contacted,qualified,active,closed'],
@@ -272,8 +278,7 @@ class LeadController extends Controller
 
     public function destroy(Request $request, Lead $lead): RedirectResponse
     {
-        abort_unless($request->user()?->isOwner(), 403);
-        $this->ensureLeadInAccount($lead);
+        $this->ensureLeadAccessible($lead);
 
         $lead->delete();
 
@@ -284,8 +289,6 @@ class LeadController extends Controller
 
     public function bulkDestroy(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->isOwner(), 403);
-
         $data = $request->validate([
             'lead_ids' => ['required', 'array', 'min:1'],
             'lead_ids.*' => ['integer', 'exists:leads,id'],
@@ -296,26 +299,21 @@ class LeadController extends Controller
             ->unique()
             ->values();
 
-        DB::transaction(function () use ($leadIds): void {
-            $query = Lead::query();
-            $this->scopeLeadsToAccount($query);
+        $query = Lead::query()->whereIn('id', $leadIds);
+        $this->scopeLeadsForCurrentUser($query);
 
-            $query
-                ->whereIn('id', $leadIds)
-                ->delete();
-        });
+        $deleted = DB::transaction(fn (): int => $query->delete());
 
         return redirect()
             ->route('manager.leads.index')
-            ->with('status', sprintf('%d leads moved to recycle bin.', $leadIds->count()));
+            ->with('status', sprintf('%d leads moved to recycle bin.', $deleted));
     }
 
     public function restore(Request $request, int $leadId): RedirectResponse
     {
-        abort_unless($request->user()?->isOwner(), 403);
-
-        $lead = Lead::query()->withTrashed()->findOrFail($leadId);
-        abort_unless($this->inCurrentAccountScope($lead->account_id, true), 404);
+        $query = Lead::query()->withTrashed()->whereKey($leadId);
+        $this->scopeLeadsForCurrentUser($query);
+        $lead = $query->firstOrFail();
 
         if (! $lead->trashed()) {
             return redirect()
@@ -332,8 +330,6 @@ class LeadController extends Controller
 
     public function bulkRestore(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->isOwner(), 403);
-
         $data = $request->validate([
             'lead_ids' => ['required', 'array', 'min:1'],
             'lead_ids.*' => ['integer', 'exists:leads,id'],
@@ -345,7 +341,7 @@ class LeadController extends Controller
             ->values();
 
         $query = Lead::query()->onlyTrashed();
-        $this->scopeLeadsToAccount($query);
+        $this->scopeLeadsForCurrentUser($query);
 
         $restored = $query
             ->whereIn('id', $leadIds)

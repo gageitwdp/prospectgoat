@@ -6,6 +6,7 @@ use App\Mail\LeadInquiryConfirmationMail;
 use App\Http\Controllers\LeadIntakeController;
 use App\Http\Requests\StoreBuyerLeadRequest;
 use App\Http\Requests\StoreSellerLeadRequest;
+use App\Models\Account;
 use App\Models\EmailTemplate;
 use App\Models\Lead;
 use App\Models\Task;
@@ -350,6 +351,84 @@ class LeadManagementTest extends TestCase
         $response = $this->actingAs($user)->get(route('manager.leads.index'));
 
         $response->assertOk();
+    }
+
+    public function test_global_admin_cannot_view_lead_management_routes(): void
+    {
+        $globalAdmin = User::factory()->create(['role' => 'global_admin']);
+
+        $response = $this->actingAs($globalAdmin)->get(route('manager.leads.index'));
+
+        $response->assertForbidden();
+    }
+
+    public function test_single_agent_cannot_view_other_agents_lead(): void
+    {
+        $account = Account::factory()->activeBilling()->create([
+            'service_level' => Account::SERVICE_LEVEL_SINGLE_AGENT,
+        ]);
+
+        $creator = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'agent',
+        ]);
+
+        $viewer = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'agent',
+        ]);
+
+        $lead = Lead::create([
+            'account_id' => $account->id,
+            'name' => 'Creator Lead',
+            'email' => 'creator-only@example.com',
+            'phone' => '555-1212',
+            'address' => null,
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'new',
+            'assigned_to' => null,
+            'created_by' => $creator->id,
+        ]);
+
+        $response = $this->actingAs($viewer)->get(route('manager.leads.show', $lead));
+
+        $response->assertNotFound();
+    }
+
+    public function test_team_account_agent_can_view_other_team_members_lead(): void
+    {
+        $account = Account::factory()->activeBilling()->create([
+            'service_level' => Account::SERVICE_LEVEL_TEAM,
+        ]);
+
+        $creator = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'agent',
+        ]);
+
+        $viewer = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'agent',
+        ]);
+
+        $lead = Lead::create([
+            'account_id' => $account->id,
+            'name' => 'Team Shared Lead',
+            'email' => 'team-shared@example.com',
+            'phone' => '555-1213',
+            'address' => null,
+            'lead_type' => 'seller',
+            'source' => 'referral',
+            'status' => 'new',
+            'assigned_to' => null,
+            'created_by' => $creator->id,
+        ]);
+
+        $response = $this->actingAs($viewer)->get(route('manager.leads.show', $lead));
+
+        $response->assertOk();
+        $response->assertSee('Team Shared Lead');
     }
 
     public function test_owner_can_see_import_leads_button_on_lead_management_page(): void
@@ -916,8 +995,13 @@ class LeadManagementTest extends TestCase
     public function test_agent_cannot_delete_lead(): void
     {
         $agent = User::factory()->create(['role' => 'agent']);
+        $otherAgent = User::factory()->create([
+            'account_id' => $agent->account_id,
+            'role' => 'agent',
+        ]);
 
         $lead = Lead::create([
+            'account_id' => $agent->account_id,
             'name' => 'Protected Lead',
             'email' => 'protected@example.com',
             'phone' => '555-0230',
@@ -926,11 +1010,12 @@ class LeadManagementTest extends TestCase
             'source' => 'landing_page',
             'status' => 'new',
             'assigned_to' => null,
+            'created_by' => $otherAgent->id,
         ]);
 
         $response = $this->actingAs($agent)->delete(route('manager.leads.destroy', $lead));
 
-        $response->assertForbidden();
+        $response->assertNotFound();
         $this->assertDatabaseHas('leads', ['id' => $lead->id]);
     }
 
@@ -998,7 +1083,12 @@ class LeadManagementTest extends TestCase
     public function test_agent_cannot_bulk_delete_leads(): void
     {
         $agent = User::factory()->create(['role' => 'agent']);
+        $otherAgent = User::factory()->create([
+            'account_id' => $agent->account_id,
+            'role' => 'agent',
+        ]);
         $lead = Lead::create([
+            'account_id' => $agent->account_id,
             'name' => 'No Bulk Permission',
             'email' => 'no-bulk@example.com',
             'phone' => '555-0403',
@@ -1007,13 +1097,15 @@ class LeadManagementTest extends TestCase
             'source' => 'homepage',
             'status' => 'new',
             'assigned_to' => null,
+            'created_by' => $otherAgent->id,
         ]);
 
         $response = $this->actingAs($agent)->delete(route('manager.leads.bulk-destroy'), [
             'lead_ids' => [$lead->id],
         ]);
 
-        $response->assertForbidden();
+        $response->assertRedirect(route('manager.leads.index'));
+        $response->assertSessionHas('status', '0 leads moved to recycle bin.');
         $this->assertDatabaseHas('leads', ['id' => $lead->id]);
     }
 

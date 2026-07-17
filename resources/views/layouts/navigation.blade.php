@@ -4,7 +4,7 @@
         $isOwner = $currentUser?->isOwner() ?? false;
         $isGlobalAdmin = $currentUser?->isGlobalAdmin() ?? false;
         $planModuleVisibility = app(\App\Services\Plans\PlanModuleVisibilityService::class);
-        $canSeeLeadManagement = $isGlobalAdmin || $planModuleVisibility->isEnabledForAccount($currentUser?->account, 'lead_management');
+        $canSeeLeadManagement = ! $isGlobalAdmin && $planModuleVisibility->isEnabledForAccount($currentUser?->account, 'lead_management');
         $canSeeEvents = $isGlobalAdmin || $planModuleVisibility->isEnabledForAccount($currentUser?->account, 'events');
         $canSeeUsers = $isGlobalAdmin || $planModuleVisibility->isEnabledForAccount($currentUser?->account, 'user_management');
         $homeRoute = $isOwner

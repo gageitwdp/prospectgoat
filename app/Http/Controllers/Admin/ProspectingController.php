@@ -13,7 +13,10 @@ use Illuminate\View\View;
 
 class ProspectingController extends Controller
 {
-    public function __construct(private readonly ProspectingScriptLibraryService $scriptLibrary) {}
+    public function __construct(private readonly ProspectingScriptLibraryService $scriptLibrary)
+    {
+        abort_if($this->currentUserIsGlobalAdmin(), 403);
+    }
 
     private const DEFAULT_PHONE = '111-111-1111';
 
@@ -190,6 +193,8 @@ class ProspectingController extends Controller
 
     public function storeLead(Request $request): JsonResponse
     {
+        abort_if($this->currentUserIsGlobalAdmin(), 403);
+
         $accountId = $this->requireCurrentAccountId();
 
         $validator = Validator::make($request->all(), [
@@ -233,6 +238,7 @@ class ProspectingController extends Controller
             'source' => 'homepage',
             'status' => 'new',
             'assigned_to' => null,
+            'created_by' => $request->user()?->id,
         ]);
 
         $lead->activities()->create([
@@ -258,13 +264,7 @@ class ProspectingController extends Controller
         $normalizedAddress = strtolower(trim($address));
 
         return Lead::query()
-            ->when(
-                ! $this->currentUserIsGlobalAdmin(),
-                fn ($query) => $query->where(function ($inner) use ($accountId) {
-                    $inner->where('account_id', $accountId)
-                        ->orWhereNull('account_id');
-                })
-            )
+            ->where('account_id', $accountId)
             ->whereRaw('LOWER(TRIM(name)) = ?', [$normalizedName])
             ->whereRaw('LOWER(TRIM(address)) = ?', [$normalizedAddress])
             ->exists();

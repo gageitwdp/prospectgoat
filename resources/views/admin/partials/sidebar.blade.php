@@ -4,13 +4,6 @@
 
     $navItems = [
         [
-            'label' => 'Lead Management',
-            'route' => route('manager.leads.index'),
-            'active' => request()->routeIs('manager.leads.*'),
-            'status' => 'Live',
-            'module_key' => 'lead_management',
-        ],
-        [
             'label' => 'Prospecting Tool',
             'route' => route('admin.prospecting.index'),
             'active' => request()->routeIs('admin.prospecting.*'),
@@ -32,6 +25,16 @@
             'module_key' => 'email_templates',
         ],
     ];
+
+    if (! $authUser?->isGlobalAdmin()) {
+        array_unshift($navItems, [
+            'label' => 'Lead Management',
+            'route' => route('manager.leads.index'),
+            'active' => request()->routeIs('manager.leads.*'),
+            'status' => 'Live',
+            'module_key' => 'lead_management',
+        ]);
+    }
 
     if (auth()->user()?->isGlobalAdmin()) {
         $navItems[] = [

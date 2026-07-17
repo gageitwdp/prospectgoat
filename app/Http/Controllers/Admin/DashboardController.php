@@ -17,8 +17,9 @@ class DashboardController extends Controller
         $authUser = auth()->user();
         $userQuery = User::query();
         $leadQuery = Lead::query();
+        $isGlobalAdmin = $this->currentUserIsGlobalAdmin();
 
-        if (! $this->currentUserIsGlobalAdmin()) {
+        if (! $isGlobalAdmin) {
             $accountId = $this->requireCurrentAccountId();
             $userQuery->where('account_id', $accountId);
             $leadQuery->where('account_id', $accountId);
@@ -29,17 +30,10 @@ class DashboardController extends Controller
             'admin_users' => (clone $userQuery)->whereIn('role', ['owner', 'admin', 'global_admin'])->count(),
             'manager_users' => (clone $userQuery)->where('role', 'manager')->count(),
             'agent_users' => (clone $userQuery)->where('role', 'agent')->count(),
-            'total_leads' => (clone $leadQuery)->count(),
+            'total_leads' => $isGlobalAdmin ? null : (clone $leadQuery)->count(),
         ];
 
         $modules = [
-            [
-                'name' => 'Lead Management',
-                'description' => 'Review leads, monitor pipeline stages, and coordinate follow-up tasks.',
-                'route' => route('manager.leads.index'),
-                'status' => 'Live',
-                'module_key' => 'lead_management',
-            ],
             [
                 'name' => 'Prospecting Tool',
                 'description' => 'Review one prospect card at a time, enrich contact details, and save qualified leads.',
@@ -63,7 +57,7 @@ class DashboardController extends Controller
             ],
         ];
 
-        if ($this->currentUserIsGlobalAdmin()) {
+        if ($isGlobalAdmin) {
             $modules[] = [
                 'name' => 'Global Account Oversight',
                 'description' => 'Monitor all tenant accounts, plan tiers, billing status, and payment history.',
@@ -107,6 +101,14 @@ class DashboardController extends Controller
                 'status' => 'Coming Soon',
             ];
         } else {
+            array_unshift($modules, [
+                'name' => 'Lead Management',
+                'description' => 'Review leads, monitor pipeline stages, and coordinate follow-up tasks.',
+                'route' => route('manager.leads.index'),
+                'status' => 'Live',
+                'module_key' => 'lead_management',
+            ]);
+
             $modules[] = [
                 'name' => 'User Management',
                 'description' => 'Manage owner, manager, and agent access, profile details, and role assignments.',

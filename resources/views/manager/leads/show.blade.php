@@ -4,7 +4,7 @@
             <h2 class="text-xl font-semibold lp-title">Lead Detail</h2>
             <div class="flex items-center gap-3">
                 <a href="{{ route('manager.leads.index') }}" class="text-sm lp-muted underline">Back to all leads</a>
-                @if (auth()->user()?->role === 'admin')
+                @if (auth()->user() && ! auth()->user()->isGlobalAdmin())
                     <form
                         method="POST"
                         action="{{ route('manager.leads.destroy', $lead) }}"

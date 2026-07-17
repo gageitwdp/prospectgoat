@@ -38,15 +38,7 @@ class UpdateLeadRequest extends FormRequest
             'assigned_to' => [
                 'nullable',
                 Rule::exists('users', 'id')->where(function ($query) use ($user, $leadAccountId) {
-                    if ($user?->isGlobalAdmin()) {
-                        if ($leadAccountId !== null) {
-                            $query->where('account_id', $leadAccountId);
-                        }
-
-                        return;
-                    }
-
-                    $query->where('account_id', $user?->account_id);
+                    $query->where('account_id', $leadAccountId ?? $user?->account_id);
                 }),
             ],
         ];

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\ProspectingSession;
 use App\Services\Prospecting\ProspectingScriptLibraryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,8 +33,24 @@ class ProspectingController extends Controller
 
     public function index(): View
     {
+        $accountId = $this->requireCurrentAccountId();
+        $userId = auth()->id();
+
+        $session = null;
+
+        if (is_numeric($userId) && (int) $userId > 0) {
+            $session = ProspectingSession::query()
+                ->where('account_id', $accountId)
+                ->where('user_id', (int) $userId)
+                ->first();
+        }
+
         return view('admin.prospecting.index', [
-            'scripts' => $this->scriptLibrary->scriptsForProspectingTool($this->requireCurrentAccountId()),
+            'scripts' => $this->scriptLibrary->scriptsForProspectingTool($accountId),
+            'prospectingSession' => $session ? [
+                'csv_filename' => $session->csv_filename,
+                'state' => $session->state,
+            ] : null,
         ]);
     }
 
@@ -93,10 +110,67 @@ class ProspectingController extends Controller
 
         fclose($handle);
 
+        $accountId = $this->requireCurrentAccountId();
+        $userId = (int) ($request->user()?->id ?? 0);
+
+        if ($userId > 0) {
+            $this->upsertProspectingSession(
+                $accountId,
+                $userId,
+                [
+                    'rows' => $rows,
+                    'current_index' => 0,
+                    'edits' => [],
+                    'saved_rows' => [],
+                ],
+                (string) ($file?->getClientOriginalName() ?? ''),
+            );
+        }
+
         return response()->json([
             'message' => sprintf('%d prospect row(s) loaded.', count($rows)),
             'count' => count($rows),
             'rows' => $rows,
+        ]);
+    }
+
+    public function updateSessionState(Request $request): JsonResponse
+    {
+        $accountId = $this->requireCurrentAccountId();
+        $userId = (int) ($request->user()?->id ?? 0);
+
+        if ($userId <= 0) {
+            return response()->json([
+                'message' => 'Unable to resolve user context.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'csv_filename' => ['nullable', 'string', 'max:255'],
+            'rows' => ['required', 'array'],
+            'current_index' => ['required', 'integer', 'min:0'],
+            'edits' => ['required', 'array'],
+            'saved_rows' => ['required', 'array'],
+        ]);
+
+        $rows = array_values($data['rows']);
+        $maxIndex = max(0, count($rows) - 1);
+        $currentIndex = count($rows) === 0 ? 0 : min((int) $data['current_index'], $maxIndex);
+
+        $this->upsertProspectingSession(
+            $accountId,
+            $userId,
+            [
+                'rows' => $rows,
+                'current_index' => $currentIndex,
+                'edits' => $data['edits'],
+                'saved_rows' => $data['saved_rows'],
+            ],
+            (string) ($data['csv_filename'] ?? ''),
+        );
+
+        return response()->json([
+            'message' => 'Prospecting session state saved.',
         ]);
     }
 
@@ -194,5 +268,23 @@ class ProspectingController extends Controller
         }
 
         return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function upsertProspectingSession(int $accountId, int $userId, array $state, string $csvFilename): void
+    {
+        $session = ProspectingSession::query()->firstOrNew([
+            'account_id' => $accountId,
+            'user_id' => $userId,
+        ]);
+
+        $session->fill([
+            'csv_filename' => trim($csvFilename) !== '' ? trim($csvFilename) : null,
+            'state' => $state,
+        ]);
+
+        $session->save();
     }
 }

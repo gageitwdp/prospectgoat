@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Lead;
+use App\Models\ProspectingSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -52,6 +53,17 @@ class ProspectingToolTest extends TestCase
                 'property_full_address' => '123 Main St, Marietta, GA 30062',
             ]);
         $saveResponse->assertForbidden();
+
+        $sessionResponse = $this->actingAs($agent)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('admin.prospecting.session-state'), [
+                '_token' => 'test-token',
+                'rows' => [],
+                'current_index' => 0,
+                'edits' => [],
+                'saved_rows' => [],
+            ]);
+        $sessionResponse->assertForbidden();
     }
 
     public function test_admin_can_parse_prospecting_csv(): void
@@ -77,6 +89,85 @@ CSV;
         $response->assertJsonPath('rows.0.owner_full_name', 'George Bozocea');
         $response->assertJsonPath('rows.0.property_city', 'Marietta');
         $response->assertJsonPath('rows.0.property_state', 'GA');
+    }
+
+    public function test_admin_page_restores_saved_prospecting_session_state(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        ProspectingSession::query()->create([
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'csv_filename' => 'prospects-july.csv',
+            'state' => [
+                'rows' => [
+                    [
+                        'line' => 2,
+                        'owner_full_name' => 'Saved Owner',
+                        'property_full_address' => '123 Saved St, Marietta, GA 30062',
+                        'property_address' => '123 Saved St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                ],
+                'current_index' => 0,
+                'edits' => [
+                    '0' => [
+                        'phone' => '404-555-1111',
+                        'email' => 'saved@example.com',
+                    ],
+                ],
+                'saved_rows' => ['0' => true],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.prospecting.index'));
+
+        $response->assertOk();
+        $response->assertSee('prospects-july.csv');
+        $response->assertSee('Saved Owner');
+        $response->assertSee('saved@example.com');
+    }
+
+    public function test_admin_can_persist_prospecting_session_state(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.session-state'), [
+                'csv_filename' => 'prospects-august.csv',
+                'rows' => [
+                    [
+                        'line' => 2,
+                        'owner_full_name' => 'Persisted Owner',
+                        'property_full_address' => '456 Persisted Ave, Marietta, GA 30062',
+                        'property_address' => '456 Persisted Ave',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                ],
+                'current_index' => 0,
+                'edits' => [
+                    '0' => [
+                        'phone' => '404-555-2222',
+                        'email' => 'persisted@example.com',
+                    ],
+                ],
+                'saved_rows' => ['0' => true],
+            ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('message', 'Prospecting session state saved.');
+
+        $this->assertDatabaseHas('prospecting_sessions', [
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'csv_filename' => 'prospects-august.csv',
+        ]);
     }
 
     public function test_parse_fails_when_required_columns_are_missing(): void

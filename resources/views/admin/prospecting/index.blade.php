@@ -17,6 +17,10 @@
                         This workflow is dedicated to prospecting leads and does not replace the existing lead import module.
                     </p>
 
+                    <p class="mt-2 text-xs lp-muted" x-show="loadedFileName" x-cloak>
+                        Last loaded file: <span class="font-medium lp-title" x-text="loadedFileName"></span>
+                    </p>
+
                     <form class="mt-6 space-y-4" @submit.prevent="parseCsv">
                         <div>
                             <label class="mb-1 block text-sm font-medium lp-title">CSV File</label>
@@ -248,9 +252,12 @@
                 scripts: @js($scripts),
                 activeScriptIndex: 0,
                 scriptContentDraft: '',
+                loadedFileName: '',
                 savedRows: {},
                 loadingParse: false,
                 savingLead: false,
+                savingSessionState: false,
+                persistTimer: null,
                 parseSuccess: '',
                 parseError: '',
                 saveSuccess: '',
@@ -259,9 +266,15 @@
                 copyError: '',
                 modalPhone: '',
                 modalEmail: '',
+                restoredSession: @js($prospectingSession),
                 parseUrl: @js(route('admin.prospecting.parse-csv')),
+                sessionStateUrl: @js(route('admin.prospecting.session-state')),
                 saveUrl: @js(route('admin.prospecting.save-lead')),
                 csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+
+                init() {
+                    this.restoreSessionState();
+                },
 
                 get currentRow() {
                     return this.rows[this.currentIndex] || null;
@@ -308,6 +321,75 @@
                     this.copyError = '';
                 },
 
+                restoreSessionState() {
+                    const session = this.restoredSession;
+
+                    if (!session || typeof session !== 'object' || !session.state || typeof session.state !== 'object') {
+                        return;
+                    }
+
+                    const state = session.state;
+
+                    this.rows = Array.isArray(state.rows) ? state.rows : [];
+                    this.currentIndex = Number.isInteger(state.current_index) ? state.current_index : 0;
+                    this.edits = state.edits && typeof state.edits === 'object' ? state.edits : {};
+                    this.savedRows = state.saved_rows && typeof state.saved_rows === 'object' ? state.saved_rows : {};
+                    this.loadedFileName = typeof session.csv_filename === 'string' ? session.csv_filename : '';
+
+                    if (this.rows.length === 0) {
+                        this.currentIndex = 0;
+                        return;
+                    }
+
+                    if (this.currentIndex < 0) {
+                        this.currentIndex = 0;
+                    }
+
+                    if (this.currentIndex >= this.rows.length) {
+                        this.currentIndex = this.rows.length - 1;
+                    }
+                },
+
+                scheduleSessionPersist() {
+                    if (this.persistTimer) {
+                        clearTimeout(this.persistTimer);
+                    }
+
+                    this.persistTimer = setTimeout(() => {
+                        this.persistSessionState();
+                    }, 250);
+                },
+
+                async persistSessionState() {
+                    if (this.savingSessionState) {
+                        return;
+                    }
+
+                    this.savingSessionState = true;
+
+                    try {
+                        await fetch(this.sessionStateUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': this.csrfToken,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                csv_filename: this.loadedFileName || null,
+                                rows: this.rows,
+                                current_index: this.currentIndex,
+                                edits: this.edits,
+                                saved_rows: this.savedRows,
+                            }),
+                        });
+                    } catch (error) {
+                        // Intentionally silent: state save should not block prospecting workflow.
+                    } finally {
+                        this.savingSessionState = false;
+                    }
+                },
+
                 openScriptContentModal() {
                     this.scriptContentDraft = this.activeScript?.content || '';
                     this.$dispatch('open-modal', 'prospecting-script-content-modal');
@@ -317,6 +399,7 @@
                     if (this.activeScriptIndex >= 0 && this.activeScriptIndex < this.scripts.length) {
                         this.scripts[this.activeScriptIndex].content = this.scriptContentDraft;
                     }
+                    this.scheduleSessionPersist();
                     this.$dispatch('close-modal', 'prospecting-script-content-modal');
                 },
 
@@ -393,8 +476,10 @@
                         this.currentIndex = 0;
                         this.edits = {};
                         this.savedRows = {};
+                        this.loadedFileName = file.name;
                         this.clearCopyMessages();
                         this.parseSuccess = data.message || 'CSV loaded successfully.';
+                        this.scheduleSessionPersist();
                     } catch (error) {
                         this.parseError = 'Unable to parse CSV file.';
                     } finally {
@@ -408,6 +493,7 @@
                         this.saveSuccess = '';
                         this.saveError = '';
                         this.clearCopyMessages();
+                        this.scheduleSessionPersist();
                     }
                 },
 
@@ -417,6 +503,7 @@
                         this.saveSuccess = '';
                         this.saveError = '';
                         this.clearCopyMessages();
+                        this.scheduleSessionPersist();
                     }
                 },
 
@@ -427,6 +514,7 @@
 
                 applyPhone() {
                     this.currentEdit().phone = this.modalPhone.trim();
+                    this.scheduleSessionPersist();
                     this.$dispatch('close-modal', 'prospecting-phone-modal');
                 },
 
@@ -437,6 +525,7 @@
 
                 applyEmail() {
                     this.currentEdit().email = this.modalEmail.trim();
+                    this.scheduleSessionPersist();
                     this.$dispatch('close-modal', 'prospecting-email-modal');
                 },
 
@@ -505,6 +594,7 @@
 
                         this.savedRows[this.currentIndex] = true;
                         this.saveSuccess = data.message || 'Lead saved successfully.';
+                        this.scheduleSessionPersist();
                     } catch (error) {
                         this.saveError = 'Unable to save lead.';
                     } finally {

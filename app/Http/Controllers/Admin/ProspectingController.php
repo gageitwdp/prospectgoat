@@ -127,6 +127,7 @@ class ProspectingController extends Controller
                     'current_index' => 0,
                     'edits' => [],
                     'saved_rows' => [],
+                    'script_phone' => '',
                 ],
                 (string) ($file?->getClientOriginalName() ?? ''),
             );
@@ -156,6 +157,7 @@ class ProspectingController extends Controller
             'current_index' => ['required', 'integer', 'min:0'],
             'edits' => ['sometimes', 'array'],
             'saved_rows' => ['sometimes', 'array'],
+            'script_phone' => ['nullable', 'string', 'max:30'],
         ]);
 
         $existingSession = ProspectingSession::query()
@@ -170,6 +172,9 @@ class ProspectingController extends Controller
         $currentIndex = count($rows) === 0 ? 0 : min((int) $data['current_index'], $maxIndex);
         $edits = $data['edits'] ?? (is_array($existingState['edits'] ?? null) ? $existingState['edits'] : []);
         $savedRows = $data['saved_rows'] ?? (is_array($existingState['saved_rows'] ?? null) ? $existingState['saved_rows'] : []);
+        $scriptPhone = array_key_exists('script_phone', $data)
+            ? trim((string) ($data['script_phone'] ?? ''))
+            : trim((string) ($existingState['script_phone'] ?? ''));
         $csvFilename = array_key_exists('csv_filename', $data)
             ? (string) ($data['csv_filename'] ?? '')
             : (string) ($existingSession?->csv_filename ?? '');
@@ -182,6 +187,7 @@ class ProspectingController extends Controller
                 'current_index' => $currentIndex,
                 'edits' => $edits,
                 'saved_rows' => $savedRows,
+                'script_phone' => $scriptPhone,
             ],
             $csvFilename,
         );
@@ -199,13 +205,17 @@ class ProspectingController extends Controller
 
         $validator = Validator::make($request->all(), [
             'owner_full_name' => ['required', 'string', 'max:255'],
+            'owner_2_full_name' => ['nullable', 'string', 'max:255'],
             'property_full_address' => ['required', 'string', 'max:255'],
             'property_address' => ['nullable', 'string', 'max:255'],
             'property_city' => ['nullable', 'string', 'max:120'],
             'property_state' => ['nullable', 'string', 'max:20'],
             'property_zip' => ['nullable', 'string', 'max:20'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'owner_2_phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
+            'owner_2_email' => ['nullable', 'email', 'max:255'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         if ($validator->fails()) {
@@ -227,13 +237,21 @@ class ProspectingController extends Controller
 
         $phone = trim((string) ($data['phone'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
+        $owner2FullName = trim((string) ($data['owner_2_full_name'] ?? ''));
+        $owner2Phone = trim((string) ($data['owner_2_phone'] ?? ''));
+        $owner2Email = trim((string) ($data['owner_2_email'] ?? ''));
+        $notes = trim((string) ($data['notes'] ?? ''));
 
         $lead = Lead::create([
             'account_id' => $accountId,
             'name' => $name,
+            'owner_2_full_name' => $owner2FullName !== '' ? $owner2FullName : null,
             'email' => $email !== '' ? $email : self::DEFAULT_EMAIL,
+            'owner_2_email' => $owner2Email !== '' ? $owner2Email : null,
             'phone' => $phone !== '' ? $phone : self::DEFAULT_PHONE,
+            'owner_2_phone' => $owner2Phone !== '' ? $owner2Phone : null,
             'address' => $address,
+            'prospecting_notes' => $notes !== '' ? $notes : null,
             'lead_type' => 'generic_inquiry',
             'source' => 'homepage',
             'status' => 'new',

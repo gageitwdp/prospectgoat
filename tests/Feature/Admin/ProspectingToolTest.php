@@ -450,6 +450,10 @@ CSV;
                 'property_zip' => '30062',
                 'phone' => '404-555-0101',
                 'email' => 'yingzi@example.com',
+                'owner_2_full_name' => 'Alex Ruan',
+                'owner_2_phone' => '404-555-0111',
+                'owner_2_email' => 'alex@example.com',
+                'notes' => 'Owner asked for a callback tomorrow after 5pm.',
             ]);
 
         $response->assertCreated();
@@ -458,6 +462,10 @@ CSV;
             'name' => 'Yingzi Ruan',
             'phone' => '404-555-0101',
             'email' => 'yingzi@example.com',
+            'owner_2_full_name' => 'Alex Ruan',
+            'owner_2_phone' => '404-555-0111',
+            'owner_2_email' => 'alex@example.com',
+            'prospecting_notes' => 'Owner asked for a callback tomorrow after 5pm.',
         ]);
     }
 

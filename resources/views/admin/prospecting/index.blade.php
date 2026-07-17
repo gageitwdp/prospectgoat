@@ -128,6 +128,39 @@
                         </div>
                     </div>
 
+                    <div class="mt-6 grid gap-4 lg:grid-cols-3">
+                        <div>
+                            <label class="mb-1 block text-xs uppercase tracking-[0.12em] lp-muted">Owner 2 Full Name</label>
+                            <input
+                                type="text"
+                                class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
+                                x-model="currentEdit().owner_2_full_name"
+                                @input="scheduleSessionPersist"
+                                placeholder="Owner 2 full name"
+                            />
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs uppercase tracking-[0.12em] lp-muted">Owner 2 Phone</label>
+                            <input
+                                type="text"
+                                class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
+                                x-model="currentEdit().owner_2_phone"
+                                @input="scheduleSessionPersist"
+                                placeholder="555-123-4567"
+                            />
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs uppercase tracking-[0.12em] lp-muted">Owner 2 Email</label>
+                            <input
+                                type="email"
+                                class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
+                                x-model="currentEdit().owner_2_email"
+                                @input="scheduleSessionPersist"
+                                placeholder="owner2@example.com"
+                            />
+                        </div>
+                    </div>
+
                     <div class="mt-6 flex flex-wrap gap-2">
                         <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]" @click="previousCard" :disabled="currentIndex === 0">
                             Previous
@@ -174,6 +207,17 @@
                         </button>
                     </div>
 
+                    <div class="mt-5">
+                        <label class="mb-1 block text-xs uppercase tracking-[0.12em] lp-muted">Your Phone Number</label>
+                        <input
+                            type="text"
+                            class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm sm:max-w-sm"
+                            x-model="scriptPhone"
+                            @input="scheduleSessionPersist"
+                            placeholder="Your phone number"
+                        />
+                    </div>
+
                     <div class="mt-6 flex flex-wrap gap-2 border-b border-[var(--lp-border)] pb-3">
                         <template x-for="(script, index) in scripts" :key="script.id">
                             <button
@@ -186,11 +230,22 @@
                         </template>
                     </div>
 
-                    <div class="mt-6" x-show="activeScript" x-cloak>
+                    <div class="mt-6 grid gap-4 lg:grid-cols-2" x-show="activeScript" x-cloak>
                         <div class="rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
                             <p class="text-xs uppercase tracking-[0.12em] lp-muted">Preview</p>
                             <p class="mt-2 text-sm font-medium lp-title" x-text="activeScript?.name || 'Script'"></p>
                             <pre class="mt-3 whitespace-pre-wrap break-words text-sm leading-6 lp-muted" x-text="activeScript?.content || ''"></pre>
+                        </div>
+
+                        <div class="rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
+                            <label class="text-xs uppercase tracking-[0.12em] lp-muted">Notes</label>
+                            <textarea
+                                rows="9"
+                                class="mt-3 w-full rounded-xl border border-[var(--lp-border)] px-4 py-3 text-sm leading-6"
+                                x-model="currentEdit().notes"
+                                @input="scheduleSessionPersist"
+                                placeholder="Add notes for this prospect..."
+                            ></textarea>
                         </div>
                     </div>
                 </article>
@@ -268,6 +323,7 @@
                 copyError: '',
                 modalPhone: '',
                 modalEmail: '',
+                scriptPhone: '',
                 restoredSession: @js($prospectingSession),
                 parseUrl: @js(route('admin.prospecting.parse-csv')),
                 sessionStateUrl: @js(route('admin.prospecting.session-state')),
@@ -299,7 +355,14 @@
 
                 currentEdit() {
                     if (!this.edits[this.currentIndex]) {
-                        this.edits[this.currentIndex] = { phone: '', email: '' };
+                        this.edits[this.currentIndex] = {
+                            phone: '',
+                            email: '',
+                            owner_2_full_name: '',
+                            owner_2_phone: '',
+                            owner_2_email: '',
+                            notes: '',
+                        };
                     }
 
                     return this.edits[this.currentIndex];
@@ -347,6 +410,7 @@
                     this.currentIndex = Number.isInteger(state.current_index) ? state.current_index : 0;
                     this.edits = state.edits && typeof state.edits === 'object' ? state.edits : {};
                     this.savedRows = state.saved_rows && typeof state.saved_rows === 'object' ? state.saved_rows : {};
+                    this.scriptPhone = typeof state.script_phone === 'string' ? state.script_phone : '';
                     this.loadedFileName = typeof session.csv_filename === 'string' ? session.csv_filename : '';
 
                     if (this.rows.length === 0) {
@@ -400,6 +464,7 @@
                                 current_index: this.currentIndex,
                                 edits: this.edits,
                                 saved_rows: this.savedRows,
+                                script_phone: this.scriptPhone,
                             }),
                         });
                     } catch (error) {
@@ -588,13 +653,17 @@
 
                     const payload = {
                         owner_full_name: this.currentRow.owner_full_name || '',
+                        owner_2_full_name: edit.owner_2_full_name || '',
                         property_full_address: this.currentRow.property_full_address || '',
                         property_address: this.currentRow.property_address || '',
                         property_city: this.currentRow.property_city || '',
                         property_state: this.currentRow.property_state || '',
                         property_zip: this.currentRow.property_zip || '',
                         phone: edit.phone || '',
+                        owner_2_phone: edit.owner_2_phone || '',
                         email: edit.email || '',
+                        owner_2_email: edit.owner_2_email || '',
+                        notes: edit.notes || '',
                     };
 
                     try {

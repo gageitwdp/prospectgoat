@@ -30,40 +30,131 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('Is it still available?');
     }
 
-    public function test_agent_cannot_access_prospecting_module(): void
+    public function test_manager_can_access_prospecting_module(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager']);
+
+        $managerIndexResponse = $this->actingAs($manager)->get(route('admin.prospecting.index'));
+        $managerIndexResponse->assertOk();
+
+        $managerSessionResponse = $this->actingAs($manager)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.session-state'), [
+                'csv_filename' => 'manager-prospects.csv',
+                'rows' => [
+                    [
+                        'line' => 2,
+                        'owner_full_name' => 'Manager Owner',
+                        'property_full_address' => '111 Manager St, Marietta, GA 30062',
+                        'property_address' => '111 Manager St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                ],
+                'current_index' => 0,
+                'edits' => [
+                    '0' => [
+                        'phone' => '404-555-4444',
+                        'email' => 'manager@example.com',
+                    ],
+                ],
+                'saved_rows' => ['0' => true],
+            ]);
+        $managerSessionResponse->assertOk();
+    }
+
+    public function test_agent_can_access_prospecting_module(): void
     {
         $agent = User::factory()->create(['role' => 'agent']);
 
-        $indexResponse = $this->actingAs($agent)->get(route('admin.prospecting.index'));
-        $indexResponse->assertForbidden();
+        $agentIndexResponse = $this->actingAs($agent)->get(route('admin.prospecting.index'));
+        $agentIndexResponse->assertOk();
 
-        $parseResponse = $this->actingAs($agent)
+        $agentSessionResponse = $this->actingAs($agent)
             ->withSession(['_token' => 'test-token'])
-            ->post(route('admin.prospecting.parse-csv'), [
-                '_token' => 'test-token',
-                'csv_file' => UploadedFile::fake()->createWithContent('prospects.csv', 'a,b,c'),
-            ]);
-        $parseResponse->assertForbidden();
-
-        $saveResponse = $this->actingAs($agent)
-            ->withSession(['_token' => 'test-token'])
-            ->post(route('admin.prospecting.save-lead'), [
-                '_token' => 'test-token',
-                'owner_full_name' => 'Blocked User',
-                'property_full_address' => '123 Main St, Marietta, GA 30062',
-            ]);
-        $saveResponse->assertForbidden();
-
-        $sessionResponse = $this->actingAs($agent)
-            ->withSession(['_token' => 'test-token'])
-            ->post(route('admin.prospecting.session-state'), [
-                '_token' => 'test-token',
-                'rows' => [],
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.session-state'), [
+                'csv_filename' => 'agent-prospects.csv',
+                'rows' => [
+                    [
+                        'line' => 3,
+                        'owner_full_name' => 'Agent Owner',
+                        'property_full_address' => '222 Agent St, Marietta, GA 30062',
+                        'property_address' => '222 Agent St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                ],
                 'current_index' => 0,
-                'edits' => [],
-                'saved_rows' => [],
+                'edits' => [
+                    '0' => [
+                        'phone' => '404-555-5555',
+                        'email' => 'agent@example.com',
+                    ],
+                ],
+                'saved_rows' => ['0' => true],
             ]);
-        $sessionResponse->assertForbidden();
+        $agentSessionResponse->assertOk();
+    }
+
+    public function test_all_manager_portal_roles_can_persist_current_card_index(): void
+    {
+        $roles = ['owner', 'admin', 'global_admin', 'manager', 'agent'];
+
+        foreach ($roles as $role) {
+            $user = User::factory()->create(['role' => $role]);
+
+            $indexResponse = $this->actingAs($user)->get(route('admin.prospecting.index'));
+            $indexResponse->assertOk();
+
+            $sessionResponse = $this->actingAs($user)
+                ->withSession(['_token' => 'test-token'])
+                ->withHeader('X-CSRF-TOKEN', 'test-token')
+                ->postJson(route('admin.prospecting.session-state'), [
+                    'csv_filename' => sprintf('%s-prospects.csv', $role),
+                    'rows' => [
+                        [
+                            'line' => 2,
+                            'owner_full_name' => ucfirst($role).' Owner One',
+                            'property_full_address' => '100 Main St, Marietta, GA 30062',
+                            'property_address' => '100 Main St',
+                            'property_city' => 'Marietta',
+                            'property_state' => 'GA',
+                            'property_zip' => '30062',
+                        ],
+                        [
+                            'line' => 3,
+                            'owner_full_name' => ucfirst($role).' Owner Two',
+                            'property_full_address' => '200 Main St, Marietta, GA 30062',
+                            'property_address' => '200 Main St',
+                            'property_city' => 'Marietta',
+                            'property_state' => 'GA',
+                            'property_zip' => '30062',
+                        ],
+                    ],
+                    'current_index' => 1,
+                    'edits' => [
+                        '1' => [
+                            'phone' => '404-555-6666',
+                            'email' => sprintf('%s@example.com', $role),
+                        ],
+                    ],
+                    'saved_rows' => ['1' => true],
+                ]);
+
+            $sessionResponse->assertOk();
+
+            $session = ProspectingSession::query()
+                ->where('account_id', $user->account_id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            $this->assertNotNull($session);
+            $this->assertSame(1, $session->state['current_index']);
+        }
     }
 
     public function test_admin_can_parse_prospecting_csv(): void

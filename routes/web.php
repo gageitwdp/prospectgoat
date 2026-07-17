@@ -100,13 +100,6 @@ Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('a
         Route::post('/imports/leads', [LeadImportController::class, 'upload'])->name('imports.leads.upload');
     });
 
-    Route::middleware('module.enabled:prospecting_tool')->group(function () {
-        Route::get('/prospecting', [ProspectingController::class, 'index'])->name('prospecting.index');
-        Route::post('/prospecting/parse-csv', [ProspectingController::class, 'parseCsv'])->name('prospecting.parse-csv');
-        Route::post('/prospecting/session-state', [ProspectingController::class, 'updateSessionState'])->name('prospecting.session-state');
-        Route::post('/prospecting/save-lead', [ProspectingController::class, 'storeLead'])->name('prospecting.save-lead');
-    });
-
     Route::middleware('module.enabled:email_templates')->group(function () {
         Route::get('/email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
         Route::get('/email-templates/{emailTemplate}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
@@ -132,6 +125,13 @@ Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('a
     Route::post('/prospecting-scripts', [ProspectingScriptController::class, 'store'])->name('prospecting-scripts.store');
     Route::put('/prospecting-scripts/{prospectingScript}', [ProspectingScriptController::class, 'update'])->name('prospecting-scripts.update');
     Route::delete('/prospecting-scripts/{prospectingScript}', [ProspectingScriptController::class, 'destroy'])->name('prospecting-scripts.destroy');
+});
+
+Route::middleware(['auth', 'billing.active', 'manager', 'module.enabled:prospecting_tool'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/prospecting', [ProspectingController::class, 'index'])->name('prospecting.index');
+    Route::post('/prospecting/parse-csv', [ProspectingController::class, 'parseCsv'])->name('prospecting.parse-csv');
+    Route::post('/prospecting/session-state', [ProspectingController::class, 'updateSessionState'])->name('prospecting.session-state');
+    Route::post('/prospecting/save-lead', [ProspectingController::class, 'storeLead'])->name('prospecting.save-lead');
 });
 
 Route::middleware('auth')->group(function () {

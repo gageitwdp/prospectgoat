@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Services\Prospecting\ProspectingScriptLibraryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class ProspectingController extends Controller
 {
+    public function __construct(private readonly ProspectingScriptLibraryService $scriptLibrary) {}
+
     private const DEFAULT_PHONE = '111-111-1111';
 
     private const DEFAULT_EMAIL = 'default@prospectgoat.com';
@@ -29,7 +32,9 @@ class ProspectingController extends Controller
 
     public function index(): View
     {
-        return view('admin.prospecting.index');
+        return view('admin.prospecting.index', [
+            'scripts' => $this->scriptLibrary->scriptsForProspectingTool(),
+        ]);
     }
 
     public function parseCsv(Request $request): JsonResponse

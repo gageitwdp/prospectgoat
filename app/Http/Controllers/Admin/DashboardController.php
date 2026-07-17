@@ -87,6 +87,13 @@ class DashboardController extends Controller
             ];
 
             $modules[] = [
+                'name' => 'Prospecting Scripts',
+                'description' => 'Manage prospecting script tabs and content shown in the Prospecting Tool for all accounts.',
+                'route' => route('admin.prospecting-scripts.index'),
+                'status' => 'Live',
+            ];
+
+            $modules[] = [
                 'name' => 'Analytics',
                 'description' => 'Track campaign attribution, conversion velocity, and operational trends.',
                 'route' => null,

@@ -39,6 +39,7 @@ class GlobalAccountOversightModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Global Account Oversight');
+        $response->assertSee('Prospecting Scripts');
         $response->assertSee('Analytics');
         $response->assertSee('Marketing');
     }
@@ -51,6 +52,7 @@ class GlobalAccountOversightModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Global Account Oversight');
+        $response->assertDontSee('Prospecting Scripts');
         $response->assertDontSee('Analytics');
         $response->assertDontSee('Marketing');
     }

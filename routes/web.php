@@ -9,6 +9,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\LeadImportController;
 use App\Http\Controllers\Admin\ProspectingController;
+use App\Http\Controllers\Admin\ProspectingScriptController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\LeadIntakeController;
@@ -125,6 +126,11 @@ Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('a
     Route::get('/global-account-oversight', [GlobalAccountOversightController::class, 'index'])->name('global-account-oversight.index');
     Route::get('/plan-module-visibility', [PlanModuleVisibilityController::class, 'index'])->name('plan-module-visibility.index');
     Route::put('/plan-module-visibility', [PlanModuleVisibilityController::class, 'update'])->name('plan-module-visibility.update');
+
+    Route::get('/prospecting-scripts', [ProspectingScriptController::class, 'index'])->name('prospecting-scripts.index');
+    Route::post('/prospecting-scripts', [ProspectingScriptController::class, 'store'])->name('prospecting-scripts.store');
+    Route::put('/prospecting-scripts/{prospectingScript}', [ProspectingScriptController::class, 'update'])->name('prospecting-scripts.update');
+    Route::delete('/prospecting-scripts/{prospectingScript}', [ProspectingScriptController::class, 'destroy'])->name('prospecting-scripts.destroy');
 });
 
 Route::middleware('auth')->group(function () {

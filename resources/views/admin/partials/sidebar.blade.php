@@ -57,6 +57,13 @@
         ];
 
         $navItems[] = [
+            'label' => 'Prospecting Scripts',
+            'route' => route('admin.prospecting-scripts.index'),
+            'active' => request()->routeIs('admin.prospecting-scripts.*'),
+            'status' => 'Live',
+        ];
+
+        $navItems[] = [
             'label' => 'Analytics',
             'route' => null,
             'active' => false,

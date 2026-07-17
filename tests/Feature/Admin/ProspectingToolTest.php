@@ -23,8 +23,10 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('BeenVerified Lookup');
         $response->assertSee('Scripts');
         $response->assertSee('Expired Script');
+        $response->assertSee('FSBO');
         $response->assertSee('Add New Script');
         $response->assertSee('I noticed your home was listed on the market and recently expired.');
+        $response->assertSee('Is it still available?');
     }
 
     public function test_agent_cannot_access_prospecting_module(): void

@@ -240,27 +240,9 @@
                 rows: [],
                 currentIndex: 0,
                 edits: {},
-                scripts: [
-                    {
-                        id: 'expired-script',
-                        name: 'Expired Script',
-                        content: `I noticed your home was listed on the market and recently expired.
-
-Out of curiosity, Why do you think it didn't sell?
-
-I specialize in getting expired listings to sell by evaluating what went wrong and fixing that. 
-
-Are you still interested in selling ?
-
-If I can show you a different strategy on how to get your home sold will you take some time to sit down with me and go over the details?
-
-I'm available  Friday at 3pm or Saturday at Noon. 
-
-Which time works best for you ?`,
-                    },
-                ],
+                scripts: @js($scripts),
                 activeScriptIndex: 0,
-                nextScriptNumber: 2,
+                nextScriptNumber: @js(count($scripts) + 1),
                 savedRows: {},
                 loadingParse: false,
                 savingLead: false,

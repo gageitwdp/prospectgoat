@@ -42,6 +42,8 @@ class ProspectingController extends Controller
             $session = ProspectingSession::query()
                 ->where('account_id', $accountId)
                 ->where('user_id', (int) $userId)
+                ->orderByDesc('updated_at')
+                ->orderByDesc('id')
                 ->first();
         }
 
@@ -275,16 +277,12 @@ class ProspectingController extends Controller
      */
     private function upsertProspectingSession(int $accountId, int $userId, array $state, string $csvFilename): void
     {
-        $session = ProspectingSession::query()->firstOrNew([
+        $session = ProspectingSession::query()->updateOrCreate([
             'account_id' => $accountId,
             'user_id' => $userId,
-        ]);
-
-        $session->fill([
+        ], [
             'csv_filename' => trim($csvFilename) !== '' ? trim($csvFilename) : null,
             'state' => $state,
         ]);
-
-        $session->save();
     }
 }

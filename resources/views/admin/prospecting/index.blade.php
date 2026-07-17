@@ -257,6 +257,7 @@
                 loadingParse: false,
                 savingLead: false,
                 savingSessionState: false,
+                pendingSessionPersist: false,
                 persistTimer: null,
                 hideHandler: null,
                 parseSuccess: '',
@@ -375,11 +376,15 @@
                 async persistSessionState(options = {}) {
                     const useKeepalive = options.useKeepalive === true;
 
-                    if (this.savingSessionState) {
+                    if (this.savingSessionState && !useKeepalive) {
+                        this.pendingSessionPersist = true;
                         return;
                     }
 
-                    this.savingSessionState = true;
+                    if (!useKeepalive) {
+                        this.savingSessionState = true;
+                        this.pendingSessionPersist = false;
+                    }
 
                     try {
                         await fetch(this.sessionStateUrl, {
@@ -401,7 +406,16 @@
                     } catch (error) {
                         // Intentionally silent: state save should not block prospecting workflow.
                     } finally {
+                        if (useKeepalive) {
+                            return;
+                        }
+
                         this.savingSessionState = false;
+
+                        if (this.pendingSessionPersist) {
+                            this.pendingSessionPersist = false;
+                            this.persistSessionState();
+                        }
                     }
                 },
 

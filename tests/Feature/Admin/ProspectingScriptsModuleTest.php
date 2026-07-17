@@ -33,6 +33,7 @@ class ProspectingScriptsModuleTest extends TestCase
     public function test_global_admin_can_create_update_and_delete_script_tabs(): void
     {
         $globalAdmin = User::factory()->create(['role' => User::ROLE_GLOBAL_ADMIN]);
+        $startingCount = ProspectingScript::query()->count();
 
         $this->actingAs($globalAdmin)
             ->post(route('admin.prospecting-scripts.store'), [
@@ -43,7 +44,7 @@ class ProspectingScriptsModuleTest extends TestCase
             ])
             ->assertRedirect(route('admin.prospecting-scripts.index'));
 
-        $script = ProspectingScript::query()->firstOrFail();
+        $script = ProspectingScript::query()->where('name', 'Circle Prospecting')->firstOrFail();
 
         $this->assertSame('Circle Prospecting', $script->name);
         $this->assertTrue($script->is_active);
@@ -66,7 +67,21 @@ class ProspectingScriptsModuleTest extends TestCase
             ->delete(route('admin.prospecting-scripts.destroy', $script))
             ->assertRedirect(route('admin.prospecting-scripts.index'));
 
-        $this->assertDatabaseCount('prospecting_scripts', 0);
+        $this->assertDatabaseCount('prospecting_scripts', $startingCount);
+    }
+
+    public function test_global_admin_can_delete_seeded_default_script_tabs(): void
+    {
+        $globalAdmin = User::factory()->create(['role' => User::ROLE_GLOBAL_ADMIN]);
+        $defaultScript = ProspectingScript::query()->where('name', 'Expired Script')->firstOrFail();
+
+        $this->actingAs($globalAdmin)
+            ->delete(route('admin.prospecting-scripts.destroy', $defaultScript))
+            ->assertRedirect(route('admin.prospecting-scripts.index'));
+
+        $this->assertDatabaseMissing('prospecting_scripts', [
+            'id' => $defaultScript->id,
+        ]);
     }
 
     public function test_active_global_scripts_are_rendered_in_prospecting_tool(): void

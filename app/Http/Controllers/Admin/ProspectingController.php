@@ -33,7 +33,7 @@ class ProspectingController extends Controller
     public function index(): View
     {
         return view('admin.prospecting.index', [
-            'scripts' => $this->scriptLibrary->scriptsForProspectingTool(),
+            'scripts' => $this->scriptLibrary->scriptsForProspectingTool($this->requireCurrentAccountId()),
         ]);
     }
 

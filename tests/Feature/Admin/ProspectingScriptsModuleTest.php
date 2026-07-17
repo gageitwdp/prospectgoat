@@ -21,13 +21,13 @@ class ProspectingScriptsModuleTest extends TestCase
         $response->assertSee('Prospecting Script Tabs');
     }
 
-    public function test_non_global_admin_cannot_access_prospecting_scripts_module(): void
+    public function test_non_global_admin_can_access_prospecting_scripts_module(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
 
         $response = $this->actingAs($admin)->get(route('admin.prospecting-scripts.index'));
 
-        $response->assertForbidden();
+        $response->assertOk();
     }
 
     public function test_global_admin_can_create_update_and_delete_script_tabs(): void
@@ -70,6 +70,72 @@ class ProspectingScriptsModuleTest extends TestCase
         $this->assertDatabaseCount('prospecting_scripts', $startingCount);
     }
 
+    public function test_non_global_admin_can_create_update_and_delete_own_script_tabs(): void
+    {
+        $account = \App\Models\Account::factory()->activeBilling()->create();
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'account_id' => $account->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.prospecting-scripts.store'), [
+                'name' => 'My Account Script',
+                'content' => 'Account-owned script content.',
+                'sort_order' => 4,
+                'is_active' => '1',
+            ])
+            ->assertRedirect(route('admin.prospecting-scripts.index'));
+
+        $script = ProspectingScript::query()->where('name', 'My Account Script')->firstOrFail();
+        $this->assertSame($account->id, $script->account_id);
+
+        $this->actingAs($admin)
+            ->put(route('admin.prospecting-scripts.update', $script), [
+                'name' => 'My Account Script Updated',
+                'content' => 'Updated account-owned content.',
+                'sort_order' => 7,
+                'is_active' => '1',
+            ])
+            ->assertRedirect(route('admin.prospecting-scripts.index'));
+
+        $script->refresh();
+        $this->assertSame('My Account Script Updated', $script->name);
+        $this->assertSame(7, $script->sort_order);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.prospecting-scripts.destroy', $script))
+            ->assertRedirect(route('admin.prospecting-scripts.index'));
+
+        $this->assertDatabaseMissing('prospecting_scripts', [
+            'id' => $script->id,
+        ]);
+    }
+
+    public function test_non_global_admin_cannot_modify_global_script_tabs(): void
+    {
+        $account = \App\Models\Account::factory()->activeBilling()->create();
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'account_id' => $account->id,
+        ]);
+
+        $globalScript = ProspectingScript::query()->where('name', 'Expired Script')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->put(route('admin.prospecting-scripts.update', $globalScript), [
+                'name' => 'Blocked Update',
+                'content' => 'Blocked content.',
+                'sort_order' => 1,
+                'is_active' => '1',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.prospecting-scripts.destroy', $globalScript))
+            ->assertNotFound();
+    }
+
     public function test_global_admin_can_delete_seeded_default_script_tabs(): void
     {
         $globalAdmin = User::factory()->create(['role' => User::ROLE_GLOBAL_ADMIN]);
@@ -86,7 +152,11 @@ class ProspectingScriptsModuleTest extends TestCase
 
     public function test_active_global_scripts_are_rendered_in_prospecting_tool(): void
     {
+        ProspectingScript::query()->where('name', 'Expired Script')->delete();
+        ProspectingScript::query()->where('name', 'FSBO')->delete();
+
         ProspectingScript::query()->create([
+            'account_id' => null,
             'name' => 'Global FSBO',
             'content' => 'Global script text for all accounts.',
             'sort_order' => 1,
@@ -94,19 +164,35 @@ class ProspectingScriptsModuleTest extends TestCase
         ]);
 
         ProspectingScript::query()->create([
+            'account_id' => null,
             'name' => 'Inactive Script',
             'content' => 'Should not render.',
             'sort_order' => 2,
             'is_active' => false,
         ]);
 
-        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $account = \App\Models\Account::factory()->activeBilling()->create();
+
+        ProspectingScript::query()->create([
+            'account_id' => $account->id,
+            'name' => 'Account Script',
+            'content' => 'Account-specific script text.',
+            'sort_order' => 3,
+            'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'account_id' => $account->id,
+        ]);
 
         $response = $this->actingAs($admin)->get(route('admin.prospecting.index'));
 
         $response->assertOk();
         $response->assertSee('Global FSBO');
         $response->assertSee('Global script text for all accounts.');
+        $response->assertSee('Account Script');
+        $response->assertSee('Account-specific script text.');
         $response->assertDontSee('Inactive Script');
     }
 }

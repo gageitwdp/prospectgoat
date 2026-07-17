@@ -84,6 +84,14 @@
             'status' => 'Live',
             'module_key' => 'user_management',
         ];
+
+        $navItems[] = [
+            'label' => 'Prospecting Scripts',
+            'route' => route('admin.prospecting-scripts.index'),
+            'active' => request()->routeIs('admin.prospecting-scripts.*'),
+            'status' => 'Live',
+            'module_key' => 'prospecting_tool',
+        ];
     }
 
     if (! $authUser?->isGlobalAdmin()) {

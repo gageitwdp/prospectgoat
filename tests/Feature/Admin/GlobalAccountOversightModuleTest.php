@@ -52,7 +52,7 @@ class GlobalAccountOversightModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Global Account Oversight');
-        $response->assertDontSee('Prospecting Scripts');
+        $response->assertSee('Prospecting Scripts');
         $response->assertDontSee('Analytics');
         $response->assertDontSee('Marketing');
     }

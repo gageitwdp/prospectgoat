@@ -12,9 +12,13 @@ class ProspectingScriptController extends Controller
 {
     public function index(): View
     {
-        abort_unless(auth()->user()?->isGlobalAdmin(), 403);
+        $query = ProspectingScript::query();
 
-        $scripts = ProspectingScript::query()
+        if (! $this->currentUserIsGlobalAdmin()) {
+            $query->where('account_id', $this->requireCurrentAccountId());
+        }
+
+        $scripts = $query
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -26,8 +30,6 @@ class ProspectingScriptController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->isGlobalAdmin(), 403);
-
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'content' => ['required', 'string'],
@@ -35,9 +37,15 @@ class ProspectingScriptController extends Controller
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $maxSortOrder = (int) ProspectingScript::query()->max('sort_order');
+        $accountId = $this->currentUserIsGlobalAdmin() ? null : $this->requireCurrentAccountId();
+
+        $maxSortOrder = (int) ProspectingScript::query()
+            ->when($accountId === null, fn ($query) => $query->whereNull('account_id'))
+            ->when($accountId !== null, fn ($query) => $query->where('account_id', $accountId))
+            ->max('sort_order');
 
         ProspectingScript::query()->create([
+            'account_id' => $accountId,
             'name' => $data['name'],
             'content' => $data['content'],
             'sort_order' => array_key_exists('sort_order', $data) ? (int) $data['sort_order'] : $maxSortOrder + 1,
@@ -51,7 +59,7 @@ class ProspectingScriptController extends Controller
 
     public function update(Request $request, ProspectingScript $prospectingScript): RedirectResponse
     {
-        abort_unless($request->user()?->isGlobalAdmin(), 403);
+        abort_unless($this->inCurrentAccountScope($prospectingScript->account_id), 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -74,7 +82,7 @@ class ProspectingScriptController extends Controller
 
     public function destroy(Request $request, ProspectingScript $prospectingScript): RedirectResponse
     {
-        abort_unless($request->user()?->isGlobalAdmin(), 403);
+        abort_unless($this->inCurrentAccountScope($prospectingScript->account_id), 404);
 
         $prospectingScript->delete();
 

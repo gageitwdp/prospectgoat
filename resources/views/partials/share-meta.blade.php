@@ -1,6 +1,8 @@
 @php
     $shareImagePath = 'prospectgoat_favicon.png';
     $shareImage = url('/' . rawurlencode($shareImagePath));
+    $faviconPath = 'thegoat.png';
+    $favicon = url('/' . rawurlencode($faviconPath));
     $shareUrl = $shareUrl ?? url()->current();
     $shareTitle = $shareTitle ?? config('app.name', 'ProspectGoat');
     $shareDescription = $shareDescription ?? 'ProspectGoat for inquiries, events, and mortgage planning.';
@@ -8,8 +10,8 @@
 
 <meta name="description" content="{{ $shareDescription }}">
 <link rel="canonical" href="{{ $shareUrl }}">
-<link rel="icon" type="image/png" href="{{ $shareImage }}">
-<link rel="apple-touch-icon" href="{{ $shareImage }}">
+<link rel="icon" type="image/png" href="{{ $favicon }}">
+<link rel="apple-touch-icon" href="{{ $favicon }}">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ config('app.name', 'ProspectGoat') }}">

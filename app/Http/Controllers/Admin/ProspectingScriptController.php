@@ -12,7 +12,7 @@ class ProspectingScriptController extends Controller
 {
     public function index(): View
     {
-        $query = ProspectingScript::query();
+        $query = ProspectingScript::query()->whereNull('user_id');
 
         if (! $this->currentUserIsGlobalAdmin()) {
             $query->where('account_id', $this->requireCurrentAccountId());
@@ -46,6 +46,7 @@ class ProspectingScriptController extends Controller
 
         ProspectingScript::query()->create([
             'account_id' => $accountId,
+            'user_id' => null,
             'name' => $data['name'],
             'content' => $data['content'],
             'sort_order' => array_key_exists('sort_order', $data) ? (int) $data['sort_order'] : $maxSortOrder + 1,
@@ -60,6 +61,7 @@ class ProspectingScriptController extends Controller
     public function update(Request $request, ProspectingScript $prospectingScript): RedirectResponse
     {
         abort_unless($this->inCurrentAccountScope($prospectingScript->account_id), 404);
+        abort_if($prospectingScript->user_id !== null, 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -83,6 +85,7 @@ class ProspectingScriptController extends Controller
     public function destroy(Request $request, ProspectingScript $prospectingScript): RedirectResponse
     {
         abort_unless($this->inCurrentAccountScope($prospectingScript->account_id), 404);
+        abort_if($prospectingScript->user_id !== null, 404);
 
         $prospectingScript->delete();
 

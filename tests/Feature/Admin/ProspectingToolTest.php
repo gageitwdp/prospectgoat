@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Lead;
+use App\Models\ProspectingScript;
 use App\Models\ProspectingSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,6 +99,49 @@ class ProspectingToolTest extends TestCase
                 'saved_rows' => ['0' => true],
             ]);
         $agentSessionResponse->assertOk();
+    }
+
+    public function test_agent_can_create_private_script_visible_only_to_that_agent(): void
+    {
+        $account = \App\Models\Account::factory()->activeBilling()->create();
+
+        $agent = User::factory()->create([
+            'role' => 'agent',
+            'account_id' => $account->id,
+        ]);
+
+        $teammate = User::factory()->create([
+            'role' => 'agent',
+            'account_id' => $account->id,
+        ]);
+
+        $createResponse = $this->actingAs($agent)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.scripts.store'), [
+                'name' => 'My Personal Script',
+                'content' => 'Only I should be able to view this script.',
+                'is_active' => true,
+            ]);
+
+        $createResponse->assertCreated();
+        $createResponse->assertJsonPath('script.name', 'My Personal Script');
+        $createResponse->assertJsonPath('script.is_private', true);
+
+        $script = ProspectingScript::query()->where('name', 'My Personal Script')->firstOrFail();
+
+        $this->assertSame($account->id, $script->account_id);
+        $this->assertSame($agent->id, $script->user_id);
+
+        $this->actingAs($agent)
+            ->get(route('admin.prospecting.index'))
+            ->assertOk()
+            ->assertSee('My Personal Script');
+
+        $this->actingAs($teammate)
+            ->get(route('admin.prospecting.index'))
+            ->assertOk()
+            ->assertDontSee('My Personal Script');
     }
 
     public function test_all_manager_portal_roles_can_persist_current_card_index(): void

@@ -197,15 +197,30 @@
                             <h2 class="mt-1 text-2xl font-semibold lp-title">Prospecting Script Library</h2>
                         </div>
 
-                        <button
-                            type="button"
-                            class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary"
-                            @click="openScriptContentModal()"
-                            :disabled="!activeScript"
-                        >
-                            Edit Script Content
-                        </button>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                class="rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]"
+                                @click="openCreateScriptModal()"
+                            >
+                                New Private Script
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary"
+                                @click="openScriptContentModal()"
+                                :disabled="!activeScript"
+                            >
+                                Edit Script Content
+                            </button>
+                        </div>
                     </div>
+
+                    <p class="mt-3 text-xs lp-muted">
+                        Private scripts are only visible to your user.
+                    </p>
+                    <p class="mt-2 text-sm text-emerald-700" x-show="scriptSaveSuccess" x-text="scriptSaveSuccess" x-cloak></p>
+                    <p class="mt-2 text-sm text-red-600" x-show="scriptSaveError" x-text="scriptSaveError" x-cloak></p>
 
                     <div class="mt-5">
                         <label class="mb-1 block text-xs uppercase tracking-[0.12em] lp-muted">Your Phone Number</label>
@@ -225,8 +240,10 @@
                                 class="rounded-t-lg border px-4 py-2 text-sm font-medium transition"
                                 :class="activeScriptIndex === index ? 'border-[var(--lp-secondary)] bg-[var(--lp-secondary)] text-white' : 'border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'"
                                 @click="activeScriptIndex = index"
-                                x-text="script.name"
-                            ></button>
+                            >
+                                <span x-text="script.name"></span>
+                                <span x-show="script.is_private" x-cloak class="ml-2 rounded-full border border-[var(--lp-border)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em]">Private</span>
+                            </button>
                         </template>
                     </div>
 
@@ -292,7 +309,39 @@
                 ></textarea>
                 <div class="mt-6 flex justify-end gap-2">
                     <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title hover:bg-[var(--lp-canvas)]" @click="$dispatch('close-modal', 'prospecting-script-content-modal')">Cancel</button>
-                    <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" @click="applyScriptContent">Save Changes</button>
+                    <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" :disabled="savingScript" @click="applyScriptContent">
+                        <span x-show="!savingScript">Save Changes</span>
+                        <span x-show="savingScript" x-cloak>Saving...</span>
+                    </button>
+                </div>
+            </div>
+        </x-modal>
+
+        <x-modal name="prospecting-script-create-modal" maxWidth="2xl">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold lp-title">Create Private Script</h3>
+                <p class="mt-2 text-sm lp-muted">Only your user can see and edit this script.</p>
+
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium lp-title" for="private_script_name">Script Name</label>
+                        <input id="private_script_name" type="text" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" x-model="newScriptForm.name" maxlength="120" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-sm font-medium lp-title" for="private_script_content">Script Content</label>
+                        <textarea id="private_script_content" rows="12" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-3 text-sm leading-6" x-model="newScriptForm.content"></textarea>
+                    </div>
+                </div>
+
+                <p class="mt-3 text-sm text-red-600" x-show="scriptSaveError" x-text="scriptSaveError" x-cloak></p>
+
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title hover:bg-[var(--lp-canvas)]" @click="$dispatch('close-modal', 'prospecting-script-create-modal')">Cancel</button>
+                    <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" :disabled="savingScript" @click="createPrivateScript">
+                        <span x-show="!savingScript">Create Script</span>
+                        <span x-show="savingScript" x-cloak>Creating...</span>
+                    </button>
                 </div>
             </div>
         </x-modal>
@@ -321,11 +370,20 @@
                 saveError: '',
                 copySuccess: '',
                 copyError: '',
+                scriptSaveSuccess: '',
+                scriptSaveError: '',
                 modalPhone: '',
                 modalEmail: '',
                 scriptPhone: '',
+                newScriptForm: {
+                    name: '',
+                    content: '',
+                },
+                savingScript: false,
                 restoredSession: @js($prospectingSession),
                 parseUrl: @js(route('admin.prospecting.parse-csv')),
+                privateScriptStoreUrl: @js(route('admin.prospecting.scripts.store')),
+                privateScriptUpdateUrlTemplate: @js(route('admin.prospecting.scripts.update', ['prospectingScript' => '__SCRIPT_ID__'])),
                 sessionStateUrl: @js(route('admin.prospecting.session-state')),
                 saveUrl: @js(route('admin.prospecting.save-lead')),
                 csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
@@ -484,16 +542,126 @@
                 },
 
                 openScriptContentModal() {
+                    this.scriptSaveError = '';
+                    this.scriptSaveSuccess = '';
                     this.scriptContentDraft = this.activeScript?.content || '';
                     this.$dispatch('open-modal', 'prospecting-script-content-modal');
                 },
 
-                applyScriptContent() {
+                async applyScriptContent() {
                     if (this.activeScriptIndex >= 0 && this.activeScriptIndex < this.scripts.length) {
                         this.scripts[this.activeScriptIndex].content = this.scriptContentDraft;
+
+                        const script = this.scripts[this.activeScriptIndex];
+
+                        if (script?.is_private && Number.isInteger(script.db_id)) {
+                            this.savingScript = true;
+                            this.scriptSaveError = '';
+
+                            try {
+                                const response = await fetch(this.privateScriptUpdateUrl(Number(script.db_id)), {
+                                    method: 'PUT',
+                                    headers: {
+                                        'X-CSRF-TOKEN': this.csrfToken,
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        name: script.name || 'Private Script',
+                                        content: this.scriptContentDraft,
+                                        sort_order: Number(script.sort_order || 0),
+                                        is_active: true,
+                                    }),
+                                });
+
+                                const data = await response.json();
+
+                                if (!response.ok) {
+                                    this.scriptSaveError = data.message || 'Unable to save private script.';
+                                    return;
+                                }
+
+                                if (data.script && typeof data.script === 'object') {
+                                    this.scripts[this.activeScriptIndex] = data.script;
+                                }
+                            } catch (error) {
+                                this.scriptSaveError = 'Unable to save private script.';
+                                return;
+                            } finally {
+                                this.savingScript = false;
+                            }
+                        }
                     }
+
                     this.scheduleSessionPersist();
                     this.$dispatch('close-modal', 'prospecting-script-content-modal');
+                },
+
+                openCreateScriptModal() {
+                    this.scriptSaveError = '';
+                    this.scriptSaveSuccess = '';
+                    this.newScriptForm = {
+                        name: '',
+                        content: '',
+                    };
+                    this.$dispatch('open-modal', 'prospecting-script-create-modal');
+                },
+
+                privateScriptUpdateUrl(scriptId) {
+                    return this.privateScriptUpdateUrlTemplate.replace('__SCRIPT_ID__', String(scriptId));
+                },
+
+                async createPrivateScript() {
+                    const name = (this.newScriptForm.name || '').trim();
+                    const content = (this.newScriptForm.content || '').trim();
+
+                    this.scriptSaveError = '';
+                    this.scriptSaveSuccess = '';
+
+                    if (name === '' || content === '') {
+                        this.scriptSaveError = 'Script name and content are required.';
+                        return;
+                    }
+
+                    this.savingScript = true;
+
+                    try {
+                        const response = await fetch(this.privateScriptStoreUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': this.csrfToken,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                name,
+                                content,
+                                is_active: true,
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            this.scriptSaveError = data.message || 'Unable to create private script.';
+                            return;
+                        }
+
+                        if (!data.script || typeof data.script !== 'object') {
+                            this.scriptSaveError = 'Unable to create private script.';
+                            return;
+                        }
+
+                        this.scripts.push(data.script);
+                        this.activeScriptIndex = this.scripts.length - 1;
+                        this.scriptSaveSuccess = data.message || 'Private script created.';
+                        this.scheduleSessionPersist();
+                        this.$dispatch('close-modal', 'prospecting-script-create-modal');
+                    } catch (error) {
+                        this.scriptSaveError = 'Unable to create private script.';
+                    } finally {
+                        this.savingScript = false;
+                    }
                 },
 
                 async copyField(value, label) {

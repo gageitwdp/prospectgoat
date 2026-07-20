@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\ProspectingScript;
 use App\Models\ProspectingSession;
 use App\Services\Prospecting\ProspectingScriptLibraryService;
 use Illuminate\Http\JsonResponse;
@@ -168,11 +169,83 @@ class ProspectingController extends Controller
         }
 
         return view('admin.prospecting.index', [
-            'scripts' => $this->scriptLibrary->scriptsForProspectingTool($accountId),
+            'scripts' => $this->scriptLibrary->scriptsForProspectingTool($accountId, is_numeric($userId) ? (int) $userId : null),
             'prospectingSession' => $session ? [
                 'csv_filename' => $session->csv_filename,
                 'state' => $session->state,
             ] : null,
+        ]);
+    }
+
+    public function storePrivateScript(Request $request): JsonResponse
+    {
+        $accountId = $this->requireCurrentAccountId();
+        $userId = (int) ($request->user()?->id ?? 0);
+
+        if ($userId <= 0) {
+            return response()->json([
+                'message' => 'Unable to resolve user context.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'content' => ['required', 'string'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $maxSortOrder = (int) ProspectingScript::query()
+            ->where('account_id', $accountId)
+            ->where('user_id', $userId)
+            ->max('sort_order');
+
+        $script = ProspectingScript::query()->create([
+            'account_id' => $accountId,
+            'user_id' => $userId,
+            'name' => trim($data['name']),
+            'content' => $data['content'],
+            'sort_order' => array_key_exists('sort_order', $data) ? (int) $data['sort_order'] : $maxSortOrder + 1,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+        ]);
+
+        return response()->json([
+            'message' => 'Private script created.',
+            'script' => $this->scriptPayload($script),
+        ], 201);
+    }
+
+    public function updatePrivateScript(Request $request, ProspectingScript $prospectingScript): JsonResponse
+    {
+        $accountId = $this->requireCurrentAccountId();
+        $userId = (int) ($request->user()?->id ?? 0);
+
+        if ($userId <= 0) {
+            return response()->json([
+                'message' => 'Unable to resolve user context.',
+            ], 422);
+        }
+
+        abort_unless($prospectingScript->account_id === $accountId, 404);
+        abort_unless($prospectingScript->user_id === $userId, 404);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'content' => ['required', 'string'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $prospectingScript->update([
+            'name' => trim($data['name']),
+            'content' => $data['content'],
+            'sort_order' => array_key_exists('sort_order', $data) ? (int) $data['sort_order'] : (int) $prospectingScript->sort_order,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+        ]);
+
+        return response()->json([
+            'message' => 'Private script updated.',
+            'script' => $this->scriptPayload($prospectingScript->fresh()),
         ]);
     }
 
@@ -484,12 +557,27 @@ class ProspectingController extends Controller
      */
     private function upsertProspectingSession(int $accountId, int $userId, array $state, string $csvFilename): void
     {
-        $session = ProspectingSession::query()->updateOrCreate([
+        ProspectingSession::query()->updateOrCreate([
             'account_id' => $accountId,
             'user_id' => $userId,
         ], [
             'csv_filename' => trim($csvFilename) !== '' ? trim($csvFilename) : null,
             'state' => $state,
         ]);
+    }
+
+    /**
+     * @return array{id: string, db_id: int, name: string, content: string, sort_order: int, is_private: bool}
+     */
+    private function scriptPayload(ProspectingScript $script): array
+    {
+        return [
+            'id' => 'script-'.$script->id,
+            'db_id' => (int) $script->id,
+            'name' => $script->name,
+            'content' => $script->content,
+            'sort_order' => (int) $script->sort_order,
+            'is_private' => $script->user_id !== null,
+        ];
     }
 }

@@ -129,6 +129,8 @@ Route::middleware(['auth', 'billing.active', 'admin'])->prefix('admin')->name('a
 
 Route::middleware(['auth', 'billing.active', 'manager', 'module.enabled:prospecting_tool'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/prospecting', [ProspectingController::class, 'index'])->name('prospecting.index');
+    Route::post('/prospecting/scripts', [ProspectingController::class, 'storePrivateScript'])->name('prospecting.scripts.store');
+    Route::put('/prospecting/scripts/{prospectingScript}', [ProspectingController::class, 'updatePrivateScript'])->name('prospecting.scripts.update');
     Route::post('/prospecting/parse-csv', [ProspectingController::class, 'parseCsv'])->name('prospecting.parse-csv');
     Route::post('/prospecting/session-state', [ProspectingController::class, 'updateSessionState'])->name('prospecting.session-state');
     Route::post('/prospecting/save-lead', [ProspectingController::class, 'storeLead'])->name('prospecting.save-lead');

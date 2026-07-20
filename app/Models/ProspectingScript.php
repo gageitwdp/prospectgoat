@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
     'account_id',
+    'user_id',
     'name',
     'content',
     'sort_order',

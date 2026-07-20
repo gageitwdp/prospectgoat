@@ -4,8 +4,17 @@
 
         <!-- Agent Photo -->
         <div>
-            <x-input-label for="profile_image" :value="__('Agent Photo (optional)')" />
-            <input id="profile_image" class="block mt-1 w-full text-sm" type="file" name="profile_image" accept="image/*" />
+            <x-input-label for="profile_image" :value="__('Agent Photo')" />
+            <div class="mt-2 flex items-center gap-3">
+                <input id="profile_image" class="sr-only" type="file" name="profile_image" accept="image/*" />
+                <label for="profile_image" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[var(--lp-border)] bg-white text-gray-600 transition hover:bg-gray-50 hover:text-[var(--lp-secondary)]" title="Choose agent photo" aria-label="Choose agent photo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 7.5h-4.5M12 5.25v4.5M5.25 19.5h13.5A2.25 2.25 0 0 0 21 17.25V9.75A2.25 2.25 0 0 0 18.75 7.5h-2.379a1.5 1.5 0 0 1-1.06-.44l-.621-.62a1.5 1.5 0 0 0-1.06-.44h-3.258a1.5 1.5 0 0 0-1.06.44l-.621.62a1.5 1.5 0 0 1-1.06.44H5.25A2.25 2.25 0 0 0 3 9.75v7.5A2.25 2.25 0 0 0 5.25 19.5Z" />
+                        <circle cx="12" cy="13.5" r="2.25" />
+                    </svg>
+                </label>
+                <span class="text-sm text-gray-500">Upload photo</span>
+            </div>
             <x-input-error :messages="$errors->get('profile_image')" class="mt-2" />
         </div>
 
@@ -14,8 +23,6 @@
             <x-input-label for="service_level" :value="__('Plan')" />
             <select id="service_level" name="service_level" class="block mt-1 w-full rounded-md border-[var(--lp-border)] shadow-sm focus:border-[var(--lp-secondary)] focus:ring-[var(--lp-secondary)]" required>
                 <option value="single_agent" @selected(old('service_level', 'single_agent') === 'single_agent')>Single Agent</option>
-                <option value="team" disabled>Team Plan (Coming Soon)</option>
-                <option value="brokerage" disabled>Brokerage Plan (Coming Soon)</option>
             </select>
             <x-input-error :messages="$errors->get('service_level')" class="mt-2" />
         </div>

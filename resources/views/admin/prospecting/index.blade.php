@@ -26,7 +26,7 @@
                             <label class="mb-1 block text-sm font-medium lp-title">CSV File</label>
                             <input x-ref="csvFile" name="csv_file" type="file" accept=".csv,text/csv" required class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" />
                             <p class="mt-2 text-xs lp-muted">
-                                Required columns: Owner 1 Full, Property Full Address, Property Address, Property City, Property State, Property ZIP.
+                                Minimum required columns: owner name and full property address. Common header variants are supported (for example Owner Name, Owner 1 Full Name, Property Address, Full Address, ZIP Code).
                             </p>
                         </div>
 

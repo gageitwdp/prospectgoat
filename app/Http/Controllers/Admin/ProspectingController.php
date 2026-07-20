@@ -23,15 +23,132 @@ class ProspectingController extends Controller
     private const DEFAULT_EMAIL = 'default@prospectgoat.com';
 
     /**
-     * @var array<string, string>
+     * @var array<string, array{required: bool, aliases: array<int, string>}>
      */
-    private const REQUIRED_COLUMNS = [
-        'owner 1 full' => 'owner_full_name',
-        'property full address' => 'property_full_address',
-        'property address' => 'property_address',
-        'property city' => 'property_city',
-        'property state' => 'property_state',
-        'property zip' => 'property_zip',
+    private const CSV_COLUMN_SCHEMA = [
+        'owner_full_name' => [
+            'required' => true,
+            'aliases' => [
+                'owner 1 full',
+                'owner 1 full name',
+                'owner full',
+                'owner full name',
+                'owner name',
+                'primary owner',
+                'primary owner name',
+                'name',
+            ],
+        ],
+        'property_full_address' => [
+            'required' => true,
+            'aliases' => [
+                'property full address',
+                'full property address',
+                'property address full',
+                'property full addr',
+                'full address',
+                'address',
+                'mailing address',
+                'street address',
+            ],
+        ],
+        'property_address' => [
+            'required' => false,
+            'aliases' => [
+                'property address',
+                'address line 1',
+                'street',
+                'property street',
+            ],
+        ],
+        'property_city' => [
+            'required' => false,
+            'aliases' => [
+                'property city',
+                'city',
+                'property town',
+            ],
+        ],
+        'property_state' => [
+            'required' => false,
+            'aliases' => [
+                'property state',
+                'state',
+                'province',
+                'region',
+            ],
+        ],
+        'property_zip' => [
+            'required' => false,
+            'aliases' => [
+                'property zip',
+                'property zipcode',
+                'zip',
+                'zip code',
+                'zipcode',
+                'postal code',
+                'postcode',
+            ],
+        ],
+        'phone' => [
+            'required' => false,
+            'aliases' => [
+                'phone',
+                'phone number',
+                'owner phone',
+                'primary phone',
+                'cell',
+                'mobile',
+            ],
+        ],
+        'owner_2_full_name' => [
+            'required' => false,
+            'aliases' => [
+                'owner 2 full',
+                'owner 2 full name',
+                'secondary owner',
+                'secondary owner name',
+                'co owner',
+                'co-owner',
+            ],
+        ],
+        'owner_2_phone' => [
+            'required' => false,
+            'aliases' => [
+                'owner 2 phone',
+                'owner2 phone',
+                'secondary phone',
+                'co owner phone',
+            ],
+        ],
+        'email' => [
+            'required' => false,
+            'aliases' => [
+                'email',
+                'email address',
+                'owner email',
+                'primary email',
+            ],
+        ],
+        'owner_2_email' => [
+            'required' => false,
+            'aliases' => [
+                'owner 2 email',
+                'owner2 email',
+                'secondary email',
+                'co owner email',
+            ],
+        ],
+        'notes' => [
+            'required' => false,
+            'aliases' => [
+                'notes',
+                'note',
+                'comments',
+                'comment',
+                'prospecting notes',
+            ],
+        ],
     ];
 
     public function index(): View
@@ -82,18 +199,33 @@ class ProspectingController extends Controller
         }
 
         $headerRow = fgetcsv($handle) ?: [];
-        $headers = array_map(fn (string $value): string => $this->normalizeHeader($value), $headerRow);
-        $missing = array_diff(array_keys(self::REQUIRED_COLUMNS), $headers);
+
+        if ($headerRow === []) {
+            fclose($handle);
+
+            return response()->json([
+                'message' => 'CSV appears to be empty or missing a header row.',
+            ], 422);
+        }
+
+        $headerIndex = $this->resolveCsvHeaderIndex($headerRow);
+        $missing = [];
+
+        foreach (self::CSV_COLUMN_SCHEMA as $field => $config) {
+            if (($config['required'] ?? false) && ! array_key_exists($field, $headerIndex)) {
+                $missing[] = $field;
+            }
+        }
 
         if (! empty($missing)) {
             fclose($handle);
 
             return response()->json([
-                'message' => 'CSV is missing required columns: '.implode(', ', $missing),
+                'message' => 'CSV is missing required columns: '.implode(', ', $missing).'. Required: owner_full_name and property_full_address.',
             ], 422);
         }
 
-        $headerIndex = array_flip($headers);
+        $importFields = array_keys(self::CSV_COLUMN_SCHEMA);
         $rows = [];
         $line = 1;
 
@@ -106,8 +238,11 @@ class ProspectingController extends Controller
 
             $mapped = ['line' => $line];
 
-            foreach (self::REQUIRED_COLUMNS as $column => $key) {
-                $mapped[$key] = trim((string) ($row[$headerIndex[$column]] ?? ''));
+            foreach ($importFields as $field) {
+                $index = $headerIndex[$field] ?? null;
+                $mapped[$field] = is_int($index)
+                    ? trim((string) ($row[$index] ?? ''))
+                    : '';
             }
 
             $rows[] = $mapped;
@@ -273,7 +408,49 @@ class ProspectingController extends Controller
 
     private function normalizeHeader(string $header): string
     {
-        return strtolower(trim($header));
+        $normalized = strtolower(trim($header));
+        $normalized = str_replace(['_', '-'], ' ', $normalized);
+        $normalized = preg_replace('/[^a-z0-9\s]/', ' ', $normalized) ?? $normalized;
+
+        return preg_replace('/\s+/', ' ', trim($normalized)) ?? trim($normalized);
+    }
+
+    /**
+     * @param  array<int, string|null>  $headerRow
+     * @return array<string, int>
+     */
+    private function resolveCsvHeaderIndex(array $headerRow): array
+    {
+        $normalizedHeaders = [];
+
+        foreach ($headerRow as $index => $header) {
+            $normalized = $this->normalizeHeader((string) ($header ?? ''));
+
+            if ($normalized === '' || array_key_exists($normalized, $normalizedHeaders)) {
+                continue;
+            }
+
+            $normalizedHeaders[$normalized] = $index;
+        }
+
+        $resolved = [];
+
+        foreach (self::CSV_COLUMN_SCHEMA as $field => $config) {
+            $candidates = array_merge([$field], $config['aliases'] ?? []);
+
+            foreach ($candidates as $candidate) {
+                $normalizedCandidate = $this->normalizeHeader($candidate);
+
+                if ($normalizedCandidate === '' || ! array_key_exists($normalizedCandidate, $normalizedHeaders)) {
+                    continue;
+                }
+
+                $resolved[$field] = $normalizedHeaders[$normalizedCandidate];
+                break;
+            }
+        }
+
+        return $resolved;
     }
 
     private function duplicateLeadExists(string $name, string $address, int $accountId): bool

@@ -182,6 +182,63 @@ CSV;
         $response->assertJsonPath('rows.0.property_state', 'GA');
     }
 
+    public function test_admin_can_parse_csv_with_only_minimum_required_columns(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $csv = <<<CSV
+Owner Name,Full Address
+George Bozocea,"4032 Wesley Chapel Rd, Marietta, GA 30062"
+CSV;
+
+        $file = UploadedFile::fake()->createWithContent('prospects-minimum.csv', $csv);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('admin.prospecting.parse-csv'), [
+                '_token' => 'test-token',
+                'csv_file' => $file,
+            ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('rows.0.owner_full_name', 'George Bozocea');
+        $response->assertJsonPath('rows.0.property_full_address', '4032 Wesley Chapel Rd, Marietta, GA 30062');
+        $response->assertJsonPath('rows.0.property_city', '');
+        $response->assertJsonPath('rows.0.property_state', '');
+        $response->assertJsonPath('rows.0.property_zip', '');
+    }
+
+    public function test_admin_can_parse_csv_with_common_alias_headers(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $csv = <<<CSV
+Primary Owner Name,Street Address,City,State,ZIP Code,Phone Number,Email Address,Notes
+Yingzi Ruan,1265 Promontory Ln,Marietta,GA,30062,404-555-0101,yingzi@example.com,Owner asked for callback
+CSV;
+
+        $file = UploadedFile::fake()->createWithContent('prospects-aliases.csv', $csv);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('admin.prospecting.parse-csv'), [
+                '_token' => 'test-token',
+                'csv_file' => $file,
+            ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('rows.0.owner_full_name', 'Yingzi Ruan');
+        $response->assertJsonPath('rows.0.property_full_address', '1265 Promontory Ln');
+        $response->assertJsonPath('rows.0.property_city', 'Marietta');
+        $response->assertJsonPath('rows.0.property_state', 'GA');
+        $response->assertJsonPath('rows.0.property_zip', '30062');
+        $response->assertJsonPath('rows.0.phone', '404-555-0101');
+        $response->assertJsonPath('rows.0.email', 'yingzi@example.com');
+        $response->assertJsonPath('rows.0.notes', 'Owner asked for callback');
+    }
+
     public function test_admin_page_restores_saved_prospecting_session_state(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -371,13 +428,13 @@ CSV;
         $this->assertSame('Existing Owner Two', $session->state['rows'][1]['owner_full_name']);
     }
 
-    public function test_parse_fails_when_required_columns_are_missing(): void
+    public function test_parse_fails_when_minimum_required_columns_are_missing(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
         $csv = <<<CSV
-Owner 1 Full,Property Full Address,Property Address,Property City,Property State
-George Bozocea,"4032 Wesley Chapel Rd, Marietta, GA 30062",4032 Wesley Chapel Rd,Marietta,GA
+Property City,Property State,Property ZIP
+Marietta,GA,30062
 CSV;
 
         $file = UploadedFile::fake()->createWithContent('prospects.csv', $csv);
@@ -390,7 +447,7 @@ CSV;
             ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'CSV is missing required columns: property zip');
+        $response->assertJsonPath('message', 'CSV is missing required columns: owner_full_name, property_full_address. Required: owner_full_name and property_full_address.');
     }
 
     public function test_save_lead_uses_defaults_when_phone_and_email_are_missing(): void

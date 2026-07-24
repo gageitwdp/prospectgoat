@@ -283,6 +283,94 @@ CSV;
         $response->assertJsonPath('rows.0.notes', 'Owner asked for callback');
     }
 
+    public function test_admin_can_parse_mailing_labels_8_csv_profile(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $csv = <<<CSV
+Owner 1 Full,Owner 1 First,Owner 1 Middle,Owner 1 Last,Owner 2 Full,Owner 2 First,Owner 2 Middle,Owner 2 Last,Property Full Address,Property Address,Property City,Property State,Property ZIP,Property ZIP plus 4,Tax Full Address,Tax Address,Tax City,Tax State,Tax ZIP,Tax ZIP plus 4,On Do Not Mail List
+Jonathan D. Smith,Jonathan,D,Smith,,,,,"395 Heard Rd, Canton, GA 30114",395 Heard Rd,Canton,GA,30114,7305,"395 Heard Rd, Canton, GA 30114",395 Heard Rd,Canton,GA,30114,7305,N
+CSV;
+
+        $file = UploadedFile::fake()->createWithContent('mailing-labels-8.csv', $csv);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('admin.prospecting.parse-csv'), [
+                '_token' => 'test-token',
+                'csv_file' => $file,
+            ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('mapping.detected_profile', 'mailing_labels_8');
+        $response->assertJsonPath('rows.0.owner_full_name', 'Jonathan D. Smith');
+        $response->assertJsonPath('rows.0.property_full_address', '395 Heard Rd, Canton, GA 30114');
+        $response->assertJsonPath('rows.0.property_address', '395 Heard Rd');
+        $response->assertJsonPath('rows.0.property_city', 'Canton');
+        $response->assertJsonPath('rows.0.property_state', 'GA');
+        $response->assertJsonPath('rows.0.property_zip', '30114');
+    }
+
+    public function test_admin_can_parse_non_standard_headers_with_dynamic_fallback(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $csv = <<<CSV
+Primary Owner Contact Name,Site Street Line,Municipality City Name,State Region,Postal Identifier Code
+Taylor Reynolds,88 Riverbend Ct,Canton,GA,30114
+CSV;
+
+        $file = UploadedFile::fake()->createWithContent('prospects-dynamic.csv', $csv);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('admin.prospecting.parse-csv'), [
+                '_token' => 'test-token',
+                'csv_file' => $file,
+            ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('mapping.detected_profile', null);
+        $response->assertJsonPath('rows.0.owner_full_name', 'Taylor Reynolds');
+        $response->assertJsonPath('rows.0.property_address', '88 Riverbend Ct');
+        $response->assertJsonPath('rows.0.property_city', 'Canton');
+        $response->assertJsonPath('rows.0.property_state', 'GA');
+        $response->assertJsonPath('rows.0.property_zip', '30114');
+        $response->assertJsonPath('rows.0.property_full_address', '88 Riverbend Ct, Canton, GA 30114');
+    }
+
+    public function test_admin_can_parse_unknown_headers_with_best_effort_blanks(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $csv = <<<CSV
+Unrelated Column One,Unrelated Column Two
+value one,value two
+CSV;
+
+        $file = UploadedFile::fake()->createWithContent('prospects-unknown.csv', $csv);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('admin.prospecting.parse-csv'), [
+                '_token' => 'test-token',
+                'csv_file' => $file,
+            ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('rows.0.owner_full_name', '');
+        $response->assertJsonPath('rows.0.property_full_address', '');
+
+        $payload = $response->json();
+
+        $this->assertContains('owner_full_name', $payload['mapping']['unmapped_fields']);
+        $this->assertContains('property_full_address', $payload['mapping']['unmapped_fields']);
+        $this->assertNotEmpty($payload['mapping']['warnings']);
+    }
+
     public function test_admin_page_restores_saved_prospecting_session_state(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -472,7 +560,7 @@ CSV;
         $this->assertSame('Existing Owner Two', $session->state['rows'][1]['owner_full_name']);
     }
 
-    public function test_parse_fails_when_minimum_required_columns_are_missing(): void
+    public function test_parse_uses_best_effort_when_minimum_required_columns_are_missing(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
@@ -490,8 +578,15 @@ CSV;
                 'csv_file' => $file,
             ]);
 
-        $response->assertStatus(422);
-        $response->assertJsonPath('message', 'CSV is missing required columns: owner_full_name, property_full_address. Required: owner_full_name and property_full_address.');
+        $response->assertOk();
+        $response->assertJsonPath('count', 1);
+        $response->assertJsonPath('rows.0.owner_full_name', '');
+        $response->assertJsonPath('rows.0.property_full_address', '');
+
+        $payload = $response->json();
+        $this->assertContains('owner_full_name', $payload['mapping']['unmapped_fields']);
+        $this->assertContains('property_full_address', $payload['mapping']['unmapped_fields']);
+        $this->assertNotEmpty($payload['mapping']['warnings']);
     }
 
     public function test_save_lead_uses_defaults_when_phone_and_email_are_missing(): void

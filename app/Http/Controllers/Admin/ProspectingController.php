@@ -23,6 +23,37 @@ class ProspectingController extends Controller
 
     private const DEFAULT_EMAIL = 'default@prospectgoat.com';
 
+    private const CSV_PROFILE_MAILING_LABELS_8 = 'mailing_labels_8';
+
+    /**
+     * Canonical export headers for the "Mailing Labels (8)" CSV profile.
+     *
+     * @var array<int, string>
+     */
+    private const MAILING_LABELS_8_HEADERS = [
+        'Owner 1 Full',
+        'Owner 1 First',
+        'Owner 1 Middle',
+        'Owner 1 Last',
+        'Owner 2 Full',
+        'Owner 2 First',
+        'Owner 2 Middle',
+        'Owner 2 Last',
+        'Property Full Address',
+        'Property Address',
+        'Property City',
+        'Property State',
+        'Property ZIP',
+        'Property ZIP plus 4',
+        'Tax Full Address',
+        'Tax Address',
+        'Tax City',
+        'Tax State',
+        'Tax ZIP',
+        'Tax ZIP plus 4',
+        'On Do Not Mail List',
+    ];
+
     /**
      * @var array<string, array{required: bool, aliases: array<int, string>}>
      */
@@ -32,6 +63,7 @@ class ProspectingController extends Controller
             'aliases' => [
                 'owner 1 full',
                 'owner 1 full name',
+                'owner 1',
                 'owner full',
                 'owner full name',
                 'owner name',
@@ -107,6 +139,7 @@ class ProspectingController extends Controller
             'aliases' => [
                 'owner 2 full',
                 'owner 2 full name',
+                'owner 2',
                 'secondary owner',
                 'secondary owner name',
                 'co owner',
@@ -281,22 +314,15 @@ class ProspectingController extends Controller
             ], 422);
         }
 
-        $headerIndex = $this->resolveCsvHeaderIndex($headerRow);
-        $missing = [];
-
-        foreach (self::CSV_COLUMN_SCHEMA as $field => $config) {
-            if (($config['required'] ?? false) && ! array_key_exists($field, $headerIndex)) {
-                $missing[] = $field;
-            }
-        }
-
-        if (! empty($missing)) {
-            fclose($handle);
-
-            return response()->json([
-                'message' => 'CSV is missing required columns: '.implode(', ', $missing).'. Required: owner_full_name and property_full_address.',
-            ], 422);
-        }
+        $headerResolution = $this->resolveCsvHeaders($headerRow);
+        $headerIndex = $headerResolution['header_index'];
+        $detectedProfile = $headerResolution['detected_profile'];
+        $mappedFields = $headerResolution['mapped_fields'];
+        $unmappedFields = $headerResolution['unmapped_fields'];
+        $normalizedHeaders = $headerResolution['normalized_headers'];
+        $requiredUnmapped = array_values(array_filter($unmappedFields, function (string $field): bool {
+            return (bool) (self::CSV_COLUMN_SCHEMA[$field]['required'] ?? false);
+        }));
 
         $importFields = array_keys(self::CSV_COLUMN_SCHEMA);
         $rows = [];
@@ -317,6 +343,8 @@ class ProspectingController extends Controller
                     ? trim((string) ($row[$index] ?? ''))
                     : '';
             }
+
+            $this->enrichMappedRow($mapped, $row, $normalizedHeaders);
 
             $rows[] = $mapped;
         }
@@ -341,10 +369,26 @@ class ProspectingController extends Controller
             );
         }
 
+        $warnings = [];
+
+        if (! empty($requiredUnmapped)) {
+            $warnings[] = 'Some required fields could not be mapped from headers and were left blank: '.implode(', ', $requiredUnmapped).'.';
+        }
+
+        if (empty($mappedFields)) {
+            $warnings[] = 'No supported headers were detected. Rows were loaded as blanks for manual completion.';
+        }
+
         return response()->json([
             'message' => sprintf('%d prospect row(s) loaded.', count($rows)),
             'count' => count($rows),
             'rows' => $rows,
+            'mapping' => [
+                'detected_profile' => $detectedProfile,
+                'mapped_fields' => $mappedFields,
+                'unmapped_fields' => $unmappedFields,
+                'warnings' => $warnings,
+            ],
         ]);
     }
 
@@ -490,9 +534,15 @@ class ProspectingController extends Controller
 
     /**
      * @param  array<int, string|null>  $headerRow
-     * @return array<string, int>
+     * @return array{
+     *   header_index: array<string, int>,
+     *   detected_profile: string|null,
+     *   mapped_fields: array<int, string>,
+     *   unmapped_fields: array<int, string>,
+     *   normalized_headers: array<string, int>
+     * }
      */
-    private function resolveCsvHeaderIndex(array $headerRow): array
+    private function resolveCsvHeaders(array $headerRow): array
     {
         $normalizedHeaders = [];
 
@@ -506,6 +556,80 @@ class ProspectingController extends Controller
             $normalizedHeaders[$normalized] = $index;
         }
 
+        $detectedProfile = null;
+        $resolved = $this->resolveMailingLabels8HeaderIndex($normalizedHeaders);
+
+        if ($resolved !== null) {
+            $detectedProfile = self::CSV_PROFILE_MAILING_LABELS_8;
+        } else {
+            $resolved = $this->resolveDynamicCsvHeaderIndex($normalizedHeaders);
+        }
+
+        $mappedFields = [];
+        $unmappedFields = [];
+
+        foreach (array_keys(self::CSV_COLUMN_SCHEMA) as $field) {
+            if (array_key_exists($field, $resolved)) {
+                $mappedFields[] = $field;
+            } else {
+                $unmappedFields[] = $field;
+            }
+        }
+
+        return [
+            'header_index' => $resolved,
+            'detected_profile' => $detectedProfile,
+            'mapped_fields' => $mappedFields,
+            'unmapped_fields' => $unmappedFields,
+            'normalized_headers' => $normalizedHeaders,
+        ];
+    }
+
+    /**
+     * @param  array<string, int>  $normalizedHeaders
+     * @return array<string, int>|null
+     */
+    private function resolveMailingLabels8HeaderIndex(array $normalizedHeaders): ?array
+    {
+        $profileHeaders = [];
+
+        foreach (self::MAILING_LABELS_8_HEADERS as $header) {
+            $profileHeaders[] = $this->normalizeHeader($header);
+        }
+
+        foreach ($profileHeaders as $profileHeader) {
+            if (! array_key_exists($profileHeader, $normalizedHeaders)) {
+                return null;
+            }
+        }
+
+        $mapping = [
+            'owner_full_name' => 'owner 1 full',
+            'owner_2_full_name' => 'owner 2 full',
+            'property_full_address' => 'property full address',
+            'property_address' => 'property address',
+            'property_city' => 'property city',
+            'property_state' => 'property state',
+            'property_zip' => 'property zip',
+        ];
+
+        $resolved = [];
+
+        foreach ($mapping as $field => $normalizedHeader) {
+            if (array_key_exists($normalizedHeader, $normalizedHeaders)) {
+                $resolved[$field] = $normalizedHeaders[$normalizedHeader];
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * @param  array<string, int>  $normalizedHeaders
+     * @return array<string, int>
+     */
+    private function resolveDynamicCsvHeaderIndex(array $normalizedHeaders): array
+    {
         $resolved = [];
 
         foreach (self::CSV_COLUMN_SCHEMA as $field => $config) {
@@ -523,7 +647,220 @@ class ProspectingController extends Controller
             }
         }
 
+        $usedIndexes = array_values($resolved);
+
+        foreach (array_keys(self::CSV_COLUMN_SCHEMA) as $field) {
+            if (array_key_exists($field, $resolved)) {
+                continue;
+            }
+
+            $index = $this->findBestDynamicHeaderMatch($field, $normalizedHeaders, $usedIndexes);
+
+            if (! is_int($index)) {
+                continue;
+            }
+
+            $resolved[$field] = $index;
+            $usedIndexes[] = $index;
+        }
+
         return $resolved;
+    }
+
+    /**
+     * @param  array<int, string|null>  $headerRow
+     * @return array<string, int>
+     */
+    private function resolveCsvHeaderIndex(array $headerRow): array
+    {
+        return $this->resolveCsvHeaders($headerRow)['header_index'];
+    }
+
+    /**
+     * @param  array<string, int>  $normalizedHeaders
+     * @param  array<int, int>  $usedIndexes
+     */
+    private function findBestDynamicHeaderMatch(string $field, array $normalizedHeaders, array $usedIndexes): ?int
+    {
+        $tokenRules = [
+            'owner_full_name' => [['owner', 'full'], ['owner', 'name'], ['primary', 'owner']],
+            'property_full_address' => [['property', 'full', 'address'], ['full', 'address'], ['mailing', 'address']],
+            'property_address' => [['property', 'address'], ['address', 'line', '1'], ['street']],
+            'property_city' => [['property', 'city'], ['city']],
+            'property_state' => [['property', 'state'], ['state'], ['province']],
+            'property_zip' => [['property', 'zip'], ['zip'], ['postal', 'code'], ['postcode']],
+            'phone' => [['phone'], ['mobile'], ['cell']],
+            'owner_2_full_name' => [['owner', '2', 'full'], ['owner', '2', 'name'], ['secondary', 'owner'], ['co', 'owner']],
+            'owner_2_phone' => [['owner', '2', 'phone'], ['secondary', 'phone'], ['co', 'owner', 'phone']],
+            'email' => [['email']],
+            'owner_2_email' => [['owner', '2', 'email'], ['secondary', 'email'], ['co', 'owner', 'email']],
+            'notes' => [['notes'], ['comments'], ['comment']],
+        ];
+
+        $rules = $tokenRules[$field] ?? [];
+
+        if ($rules === []) {
+            return null;
+        }
+
+        $bestIndex = null;
+        $bestScore = 0;
+
+        foreach ($normalizedHeaders as $normalizedHeader => $index) {
+            if (in_array($index, $usedIndexes, true)) {
+                continue;
+            }
+
+            $tokens = $this->headerTokens($normalizedHeader);
+
+            foreach ($rules as $rule) {
+                if (! $this->headerContainsAllTokens($tokens, $rule)) {
+                    continue;
+                }
+
+                $score = count($rule);
+
+                if ($score > $bestScore) {
+                    $bestScore = $score;
+                    $bestIndex = $index;
+                }
+            }
+        }
+
+        return $bestIndex;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function headerTokens(string $normalizedHeader): array
+    {
+        $parts = preg_split('/\s+/', trim($normalizedHeader)) ?: [];
+
+        return array_values(array_filter($parts, fn (string $part): bool => $part !== ''));
+    }
+
+    /**
+     * @param  array<int, string>  $tokens
+     * @param  array<int, string>  $requiredTokens
+     */
+    private function headerContainsAllTokens(array $tokens, array $requiredTokens): bool
+    {
+        foreach ($requiredTokens as $requiredToken) {
+            if (! in_array($requiredToken, $tokens, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $mapped
+     * @param  array<int, string|null>  $row
+     * @param  array<string, int>  $normalizedHeaders
+     */
+    private function enrichMappedRow(array &$mapped, array $row, array $normalizedHeaders): void
+    {
+        if (trim((string) ($mapped['owner_full_name'] ?? '')) === '') {
+            $mapped['owner_full_name'] = $this->combineNameParts($row, $normalizedHeaders, [
+                ['owner 1 first', 'owner first', 'first name'],
+                ['owner 1 middle', 'owner middle', 'middle name'],
+                ['owner 1 last', 'owner last', 'last name'],
+            ]);
+        }
+
+        if (trim((string) ($mapped['owner_2_full_name'] ?? '')) === '') {
+            $mapped['owner_2_full_name'] = $this->combineNameParts($row, $normalizedHeaders, [
+                ['owner 2 first', 'co owner first', 'secondary owner first'],
+                ['owner 2 middle', 'co owner middle', 'secondary owner middle'],
+                ['owner 2 last', 'co owner last', 'secondary owner last'],
+            ]);
+        }
+
+        if (trim((string) ($mapped['property_full_address'] ?? '')) === '') {
+            $addressLine = trim((string) ($mapped['property_address'] ?? ''));
+            $city = trim((string) ($mapped['property_city'] ?? ''));
+            $state = trim((string) ($mapped['property_state'] ?? ''));
+            $zip = trim((string) ($mapped['property_zip'] ?? ''));
+
+            $mapped['property_full_address'] = $this->composeAddress($addressLine, $city, $state, $zip);
+        }
+
+        if (trim((string) ($mapped['property_zip'] ?? '')) === '') {
+            $mapped['property_zip'] = $this->firstValueFromHeaders($row, $normalizedHeaders, [
+                'property zip plus 4',
+                'zip plus 4',
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<int, string|null>  $row
+     * @param  array<string, int>  $normalizedHeaders
+     * @param  array<int, array<int, string>>  $partHeaderCandidates
+     */
+    private function combineNameParts(array $row, array $normalizedHeaders, array $partHeaderCandidates): string
+    {
+        $parts = [];
+
+        foreach ($partHeaderCandidates as $candidates) {
+            $value = $this->firstValueFromHeaders($row, $normalizedHeaders, $candidates);
+
+            if ($value !== '') {
+                $parts[] = $value;
+            }
+        }
+
+        return trim(implode(' ', $parts));
+    }
+
+    /**
+     * @param  array<int, string|null>  $row
+     * @param  array<string, int>  $normalizedHeaders
+     * @param  array<int, string>  $candidates
+     */
+    private function firstValueFromHeaders(array $row, array $normalizedHeaders, array $candidates): string
+    {
+        foreach ($candidates as $candidate) {
+            $normalizedCandidate = $this->normalizeHeader($candidate);
+            $index = $normalizedHeaders[$normalizedCandidate] ?? null;
+
+            if (! is_int($index)) {
+                continue;
+            }
+
+            $value = trim((string) ($row[$index] ?? ''));
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    private function composeAddress(string $addressLine, string $city, string $state, string $zip): string
+    {
+        if ($addressLine === '') {
+            return '';
+        }
+
+        $locality = trim(implode(', ', array_values(array_filter([$city, $state], fn (string $part): bool => $part !== ''))));
+
+        if ($locality === '' && $zip === '') {
+            return $addressLine;
+        }
+
+        if ($locality !== '' && $zip !== '') {
+            return trim($addressLine.', '.$locality.' '.$zip);
+        }
+
+        if ($locality !== '') {
+            return trim($addressLine.', '.$locality);
+        }
+
+        return trim($addressLine.' '.$zip);
     }
 
     private function duplicateLeadExists(string $name, string $address, int $accountId): bool

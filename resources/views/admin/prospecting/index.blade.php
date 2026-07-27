@@ -49,6 +49,30 @@
                         <span class="rounded-full bg-[var(--lp-canvas)] px-3 py-1 text-xs lp-muted" x-text="`Card ${currentIndex + 1} of ${rows.length}`"></span>
                     </div>
 
+                    <div class="mt-6 rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
+                        <label class="mb-2 block text-xs uppercase tracking-[0.12em] lp-muted">Quick Search</label>
+                        <input
+                            type="text"
+                            class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
+                            x-model="searchTerm"
+                            @input="searchProspects()"
+                            placeholder="Search by name, address, or phone"
+                        />
+
+                        <div class="mt-3 flex flex-wrap gap-2" x-show="searchTerm.trim() !== ''" x-cloak>
+                            <template x-for="row in filteredRows" :key="matchIndex(row)">
+                                <button
+                                    type="button"
+                                    class="rounded-full border border-[var(--lp-border)] bg-white px-3 py-1.5 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]"
+                                    @click="goToMatch(row)"
+                                >
+                                    <span x-text="row?.owner_full_name || 'Unnamed prospect'"></span>
+                                </button>
+                            </template>
+                            <p class="w-full text-xs lp-muted" x-show="filteredRows.length === 0">No matches found.</p>
+                        </div>
+                    </div>
+
                     <div class="mt-6 grid gap-4 sm:grid-cols-2">
                         <div class="rounded-xl border border-[var(--lp-border)] p-4">
                             <div class="flex items-start justify-between gap-3">
@@ -385,6 +409,7 @@
                 activeScriptIndex: 0,
                 scriptContentDraft: '',
                 loadedFileName: '',
+                searchTerm: '',
                 savedRows: {},
                 loadingParse: false,
                 savingLead: false,
@@ -436,8 +461,68 @@
                     return this.rows[this.currentIndex] || null;
                 },
 
+                get filteredRows() {
+                    const term = (this.searchTerm || '').trim().toLowerCase();
+
+                    if (term === '') {
+                        return this.rows;
+                    }
+
+                    return this.rows.filter((row) => {
+                        const haystacks = [
+                            row?.owner_full_name || '',
+                            row?.property_full_address || '',
+                            row?.property_address || '',
+                            row?.property_city || '',
+                            row?.property_state || '',
+                            row?.property_zip || '',
+                            row?.phone || '',
+                            row?.email || '',
+                        ];
+
+                        return haystacks.some((value) => String(value).toLowerCase().includes(term));
+                    });
+                },
+
                 get activeScript() {
                     return this.scripts[this.activeScriptIndex] || null;
+                },
+
+                searchProspects() {
+                    const term = (this.searchTerm || '').trim();
+
+                    if (term === '') {
+                        return;
+                    }
+
+                    const filtered = this.filteredRows;
+
+                    if (filtered.length === 0) {
+                        return;
+                    }
+
+                    const currentMatch = this.rows[this.currentIndex];
+                    if (currentMatch && filtered.includes(currentMatch)) {
+                        return;
+                    }
+
+                    const fallbackIndex = this.rows.findIndex((row) => row === filtered[0]);
+
+                    if (fallbackIndex >= 0) {
+                        this.currentIndex = fallbackIndex;
+                    }
+                },
+
+                matchIndex(row) {
+                    return this.rows.findIndex((candidate) => candidate === row);
+                },
+
+                goToMatch(row) {
+                    const index = this.matchIndex(row);
+
+                    if (index >= 0) {
+                        this.currentIndex = index;
+                    }
                 },
 
                 currentEdit() {

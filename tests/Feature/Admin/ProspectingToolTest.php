@@ -31,6 +31,17 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('Is it still available?');
     }
 
+    public function test_prospecting_page_renders_quick_search_for_prospects(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('admin.prospecting.index'));
+
+        $response->assertOk();
+        $response->assertSee('Quick Search');
+        $response->assertSee('Search by name, address, or phone');
+    }
+
     public function test_manager_can_access_prospecting_module(): void
     {
         $manager = User::factory()->create(['role' => 'manager']);

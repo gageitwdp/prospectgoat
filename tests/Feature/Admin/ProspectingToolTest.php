@@ -720,12 +720,10 @@ CSV;
             'description' => 'Callback requested after 6pm.',
         ]);
 
-        $this->assertDatabaseHas('tasks', [
-            'lead_id' => $lead->id,
-            'title' => 'Follow up on prospect notes',
-            'due_date' => now()->toDateString(),
-            'status' => 'pending',
-        ]);
+        $task = $lead->tasks()->where('title', 'Follow up on prospect notes')->firstOrFail();
+
+        $this->assertSame(now()->toDateString(), $task->due_date->toDateString());
+        $this->assertSame('pending', $task->status);
     }
 
     public function test_duplicate_lead_is_skipped_when_name_and_address_match(): void

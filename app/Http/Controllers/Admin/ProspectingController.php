@@ -532,6 +532,21 @@ class ProspectingController extends Controller
             'description' => 'Lead saved from admin prospecting tool CSV workflow.',
         ]);
 
+        if ($notes !== '') {
+            $lead->activities()->create([
+                'account_id' => $accountId,
+                'type' => 'note',
+                'description' => $notes,
+            ]);
+
+            $lead->tasks()->create([
+                'account_id' => $accountId,
+                'title' => 'Follow up on prospect notes',
+                'due_date' => now()->toDateString(),
+                'status' => 'pending',
+            ]);
+        }
+
         return response()->json([
             'message' => 'Lead saved successfully.',
             'lead_id' => $lead->id,

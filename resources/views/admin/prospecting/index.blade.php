@@ -1044,11 +1044,11 @@
                         property_city: this.currentRow.property_city || '',
                         property_state: this.currentRow.property_state || '',
                         property_zip: this.currentRow.property_zip || '',
-                        phone: edit.phone || '',
+                        phone: edit.phone || this.currentRow?.phone || '',
                         owner_2_phone: edit.owner_2_phone || '',
-                        email: edit.email || '',
+                        email: edit.email || this.currentRow?.email || '',
                         owner_2_email: edit.owner_2_email || '',
-                        notes: edit.notes || '',
+                        notes: edit.notes || this.currentRow?.notes || '',
                     };
 
                     try {

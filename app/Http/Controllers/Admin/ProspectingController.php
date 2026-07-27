@@ -353,6 +353,16 @@ class ProspectingController extends Controller
 
         $accountId = $this->requireCurrentAccountId();
         $userId = (int) ($request->user()?->id ?? 0);
+        $existingSession = null;
+
+        if ($userId > 0) {
+            $existingSession = ProspectingSession::query()
+                ->where('account_id', $accountId)
+                ->where('user_id', $userId)
+                ->first();
+        }
+
+        $existingState = is_array($existingSession?->state) ? $existingSession->state : [];
 
         if ($userId > 0) {
             $this->upsertProspectingSession(
@@ -364,6 +374,7 @@ class ProspectingController extends Controller
                     'edits' => [],
                     'saved_rows' => [],
                     'script_phone' => '',
+                    'script_order' => is_array($existingState['script_order'] ?? null) ? array_values($existingState['script_order']) : [],
                 ],
                 (string) ($file?->getClientOriginalName() ?? ''),
             );
@@ -410,6 +421,8 @@ class ProspectingController extends Controller
             'edits' => ['sometimes', 'array'],
             'saved_rows' => ['sometimes', 'array'],
             'script_phone' => ['nullable', 'string', 'max:30'],
+            'script_order' => ['sometimes', 'array'],
+            'script_order.*' => ['string', 'max:120'],
         ]);
 
         $existingSession = ProspectingSession::query()
@@ -427,6 +440,7 @@ class ProspectingController extends Controller
         $scriptPhone = array_key_exists('script_phone', $data)
             ? trim((string) ($data['script_phone'] ?? ''))
             : trim((string) ($existingState['script_phone'] ?? ''));
+        $scriptOrder = array_values($data['script_order'] ?? (is_array($existingState['script_order'] ?? null) ? $existingState['script_order'] : []));
         $csvFilename = array_key_exists('csv_filename', $data)
             ? (string) ($data['csv_filename'] ?? '')
             : (string) ($existingSession?->csv_filename ?? '');
@@ -440,6 +454,7 @@ class ProspectingController extends Controller
                 'edits' => $edits,
                 'saved_rows' => $savedRows,
                 'script_phone' => $scriptPhone,
+                'script_order' => $scriptOrder,
             ],
             $csvFilename,
         );

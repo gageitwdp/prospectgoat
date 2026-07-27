@@ -353,6 +353,62 @@ class LeadManagementTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_authenticated_user_can_view_new_lead_form(): void
+    {
+        $user = User::factory()->create(['role' => 'agent']);
+
+        $response = $this->actingAs($user)->get(route('manager.leads.create'));
+
+        $response->assertOk();
+        $response->assertSee('Create Lead');
+    }
+
+    public function test_authenticated_user_can_create_new_lead_for_their_account(): void
+    {
+        $account = Account::factory()->activeBilling()->create();
+        $creator = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'agent',
+            'name' => 'Taylor Creator',
+        ]);
+        $assignee = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'manager',
+        ]);
+
+        $response = $this->actingAs($creator)->post(route('manager.leads.store'), [
+            'name' => 'Manual Lead',
+            'email' => 'manual-lead@example.com',
+            'phone' => '555-7788',
+            'address' => '42 Prospect Ave',
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'new',
+            'assigned_to' => $assignee->id,
+        ]);
+
+        $lead = Lead::query()->where('email', 'manual-lead@example.com')->firstOrFail();
+
+        $response->assertRedirect(route('manager.leads.show', $lead));
+        $response->assertSessionHas('status', 'Lead created successfully.');
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $lead->id,
+            'account_id' => $account->id,
+            'created_by' => $creator->id,
+            'assigned_to' => $assignee->id,
+            'name' => 'Manual Lead',
+            'status' => 'new',
+        ]);
+
+        $this->assertDatabaseHas('lead_activities', [
+            'lead_id' => $lead->id,
+            'account_id' => $account->id,
+            'type' => 'note',
+            'description' => 'Lead created manually by Taylor Creator.',
+        ]);
+    }
+
     public function test_global_admin_cannot_view_lead_management_routes(): void
     {
         $globalAdmin = User::factory()->create(['role' => 'global_admin']);

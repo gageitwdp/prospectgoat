@@ -399,6 +399,7 @@ CSV;
                     ],
                 ],
                 'saved_rows' => ['0' => true],
+                'script_order' => ['script-99', 'script-12', 'script-7'],
             ],
         ]);
 
@@ -408,6 +409,7 @@ CSV;
         $response->assertSee('prospects-july.csv');
         $response->assertSee('Saved Owner');
         $response->assertSee('saved@example.com');
+        $response->assertSee('script-99');
     }
 
     public function test_admin_can_persist_prospecting_session_state(): void
@@ -438,6 +440,7 @@ CSV;
                     ],
                 ],
                 'saved_rows' => ['0' => true],
+                'script_order' => ['script-3', 'script-1', 'script-2'],
             ]);
 
         $response->assertOk();
@@ -448,6 +451,14 @@ CSV;
             'user_id' => $admin->id,
             'csv_filename' => 'prospects-august.csv',
         ]);
+
+        $session = ProspectingSession::query()
+            ->where('account_id', $admin->account_id)
+            ->where('user_id', $admin->id)
+            ->first();
+
+        $this->assertNotNull($session);
+        $this->assertSame(['script-3', 'script-1', 'script-2'], $session->state['script_order']);
     }
 
     public function test_admin_persists_current_card_index_in_session_state(): void
@@ -537,6 +548,7 @@ CSV;
                     ],
                 ],
                 'saved_rows' => ['0' => true],
+                'script_order' => ['script-8', 'script-4'],
             ],
         ]);
 
@@ -558,6 +570,7 @@ CSV;
         $this->assertSame(1, $session->state['current_index']);
         $this->assertCount(2, $session->state['rows']);
         $this->assertSame('Existing Owner Two', $session->state['rows'][1]['owner_full_name']);
+        $this->assertSame(['script-8', 'script-4'], $session->state['script_order']);
     }
 
     public function test_parse_uses_best_effort_when_minimum_required_columns_are_missing(): void

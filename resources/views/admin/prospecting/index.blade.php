@@ -235,15 +235,43 @@
 
                     <div class="mt-6 flex flex-wrap gap-2 border-b border-[var(--lp-border)] pb-3">
                         <template x-for="(script, index) in scripts" :key="script.id">
-                            <button
-                                type="button"
-                                class="rounded-t-lg border px-4 py-2 text-sm font-medium transition"
-                                :class="activeScriptIndex === index ? 'border-[var(--lp-secondary)] bg-[var(--lp-secondary)] text-white' : 'border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'"
-                                @click="activeScriptIndex = index"
-                            >
-                                <span x-text="script.name"></span>
-                                <span x-show="script.is_private" x-cloak class="ml-2 rounded-full border border-[var(--lp-border)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em]">Private</span>
-                            </button>
+                            <div class="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    class="rounded-t-lg border px-4 py-2 text-sm font-medium transition"
+                                    :class="activeScriptIndex === index ? 'border-[var(--lp-secondary)] bg-[var(--lp-secondary)] text-white' : 'border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'"
+                                    draggable="true"
+                                    @dragstart="onScriptDragStart(index)"
+                                    @dragover.prevent
+                                    @drop.prevent="onScriptDrop(index)"
+                                    @dragend="onScriptDragEnd()"
+                                    @click="activeScriptIndex = index"
+                                >
+                                    <span x-text="script.name"></span>
+                                    <span x-show="script.is_private" x-cloak class="ml-2 rounded-full border border-[var(--lp-border)] px-2 py-0.5 text-[10px] uppercase tracking-[0.08em]">Private</span>
+                                </button>
+
+                                <div class="flex flex-col gap-0.5" x-show="scripts.length > 1">
+                                    <button
+                                        type="button"
+                                        class="rounded border border-[var(--lp-border)] px-1.5 py-0.5 text-[10px] lp-muted hover:bg-[var(--lp-canvas)]"
+                                        @click.stop="moveScript(index, Math.max(0, index - 1))"
+                                        :disabled="index === 0"
+                                        title="Move left"
+                                    >
+                                        <
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded border border-[var(--lp-border)] px-1.5 py-0.5 text-[10px] lp-muted hover:bg-[var(--lp-canvas)]"
+                                        @click.stop="moveScript(index, Math.min(scripts.length - 1, index + 1))"
+                                        :disabled="index === scripts.length - 1"
+                                        title="Move right"
+                                    >
+                                        >
+                                    </button>
+                                </div>
+                            </div>
                         </template>
                     </div>
 
@@ -364,6 +392,7 @@
                 pendingSessionPersist: false,
                 persistTimer: null,
                 hideHandler: null,
+                draggingScriptIndex: null,
                 parseSuccess: '',
                 parseError: '',
                 saveSuccess: '',
@@ -470,6 +499,8 @@
                     this.savedRows = state.saved_rows && typeof state.saved_rows === 'object' ? state.saved_rows : {};
                     this.scriptPhone = typeof state.script_phone === 'string' ? state.script_phone : '';
                     this.loadedFileName = typeof session.csv_filename === 'string' ? session.csv_filename : '';
+                    const savedScriptOrder = Array.isArray(state.script_order) ? state.script_order : [];
+                    this.applySavedScriptOrder(savedScriptOrder);
 
                     if (this.rows.length === 0) {
                         this.currentIndex = 0;
@@ -523,6 +554,7 @@
                                 edits: this.edits,
                                 saved_rows: this.savedRows,
                                 script_phone: this.scriptPhone,
+                                script_order: this.scriptOrderIds(),
                             }),
                         });
                     } catch (error) {
@@ -788,6 +820,106 @@
                     this.currentEdit().email = this.modalEmail.trim();
                     this.scheduleSessionPersist();
                     this.$dispatch('close-modal', 'prospecting-email-modal');
+                },
+
+                scriptOrderIds() {
+                    return this.scripts
+                        .map((script) => String(script?.id || '').trim())
+                        .filter((id) => id !== '');
+                },
+
+                applySavedScriptOrder(savedScriptOrder) {
+                    if (!Array.isArray(savedScriptOrder) || savedScriptOrder.length === 0 || this.scripts.length === 0) {
+                        return;
+                    }
+
+                    const scriptById = new Map();
+
+                    this.scripts.forEach((script) => {
+                        const id = String(script?.id || '').trim();
+
+                        if (id !== '') {
+                            scriptById.set(id, script);
+                        }
+                    });
+
+                    const reordered = [];
+                    const usedIds = new Set();
+
+                    savedScriptOrder.forEach((value) => {
+                        const id = String(value || '').trim();
+
+                        if (id === '' || usedIds.has(id) || !scriptById.has(id)) {
+                            return;
+                        }
+
+                        reordered.push(scriptById.get(id));
+                        usedIds.add(id);
+                    });
+
+                    this.scripts.forEach((script) => {
+                        const id = String(script?.id || '').trim();
+
+                        if (id === '' || usedIds.has(id)) {
+                            return;
+                        }
+
+                        reordered.push(script);
+                        usedIds.add(id);
+                    });
+
+                    this.scripts = reordered;
+
+                    if (this.activeScriptIndex < 0) {
+                        this.activeScriptIndex = 0;
+                    }
+
+                    if (this.activeScriptIndex >= this.scripts.length) {
+                        this.activeScriptIndex = Math.max(this.scripts.length - 1, 0);
+                    }
+                },
+
+                onScriptDragStart(index) {
+                    this.draggingScriptIndex = Number.isInteger(index) ? index : null;
+                },
+
+                onScriptDragEnd() {
+                    this.draggingScriptIndex = null;
+                },
+
+                onScriptDrop(targetIndex) {
+                    if (!Number.isInteger(targetIndex) || !Number.isInteger(this.draggingScriptIndex)) {
+                        this.draggingScriptIndex = null;
+                        return;
+                    }
+
+                    this.moveScript(this.draggingScriptIndex, targetIndex);
+                    this.draggingScriptIndex = null;
+                },
+
+                moveScript(fromIndex, toIndex) {
+                    if (
+                        !Number.isInteger(fromIndex) ||
+                        !Number.isInteger(toIndex) ||
+                        fromIndex < 0 ||
+                        toIndex < 0 ||
+                        fromIndex >= this.scripts.length ||
+                        toIndex >= this.scripts.length ||
+                        fromIndex === toIndex
+                    ) {
+                        return;
+                    }
+
+                    const activeId = this.activeScript?.id || null;
+                    const moved = this.scripts.splice(fromIndex, 1)[0];
+                    this.scripts.splice(toIndex, 0, moved);
+
+                    if (activeId) {
+                        const nextActiveIndex = this.scripts.findIndex((script) => script.id === activeId);
+                        this.activeScriptIndex = nextActiveIndex >= 0 ? nextActiveIndex : 0;
+                    }
+
+                    this.scheduleSessionPersist();
                 },
 
                 openBeenVerified() {

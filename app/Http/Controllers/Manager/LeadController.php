@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreManagerLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
 use App\Models\User;
@@ -92,6 +93,17 @@ class LeadController extends Controller
         ];
 
         return view('manager.leads.pipeline', compact('statuses', 'leadGroups', 'metrics', 'period', 'periods'));
+    }
+
+    public function create(): View
+    {
+        $managers = User::query()
+            ->where('account_id', $this->accountId())
+            ->whereIn('role', ['owner', 'manager', 'agent'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'role']);
+
+        return view('manager.leads.create', compact('managers'));
     }
 
     public function index(Request $request): View
@@ -205,6 +217,38 @@ class LeadController extends Controller
             ->get(['id', 'name', 'role']);
 
         return view('manager.leads.show', compact('lead', 'managers'));
+    }
+
+    public function store(StoreManagerLeadRequest $request): RedirectResponse
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        $accountId = $this->accountId();
+        $data = $request->validated();
+
+        $lead = Lead::create([
+            'account_id' => $accountId,
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'address' => $data['address'] ?? null,
+            'lead_type' => $data['lead_type'],
+            'source' => $data['source'],
+            'status' => $data['status'],
+            'assigned_to' => $data['assigned_to'] ?? null,
+            'created_by' => $user->id,
+        ]);
+
+        $lead->activities()->create([
+            'account_id' => $accountId,
+            'type' => 'note',
+            'description' => sprintf('Lead created manually by %s.', $user->name),
+        ]);
+
+        return redirect()
+            ->route('manager.leads.show', $lead)
+            ->with('status', 'Lead created successfully.');
     }
 
     public function update(UpdateLeadRequest $request, Lead $lead): RedirectResponse

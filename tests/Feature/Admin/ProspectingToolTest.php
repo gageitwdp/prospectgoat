@@ -689,6 +689,45 @@ CSV;
         ]);
     }
 
+    public function test_save_lead_creates_note_activity_and_task_from_prospect_notes(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.save-lead'), [
+                'owner_full_name' => 'Mina Flores',
+                'property_full_address' => '88 Willow Creek Rd, Marietta, GA 30062',
+                'property_address' => '88 Willow Creek Rd',
+                'property_city' => 'Marietta',
+                'property_state' => 'GA',
+                'property_zip' => '30062',
+                'phone' => '404-555-0188',
+                'email' => 'mina@example.com',
+                'notes' => 'Callback requested after 6pm.',
+            ]);
+
+        $response->assertCreated();
+
+        $lead = Lead::query()->where('name', 'Mina Flores')->firstOrFail();
+
+        $this->assertSame('404-555-0188', $lead->phone);
+
+        $this->assertDatabaseHas('lead_activities', [
+            'lead_id' => $lead->id,
+            'type' => 'note',
+            'description' => 'Callback requested after 6pm.',
+        ]);
+
+        $this->assertDatabaseHas('tasks', [
+            'lead_id' => $lead->id,
+            'title' => 'Follow up on prospect notes',
+            'due_date' => now()->toDateString(),
+            'status' => 'pending',
+        ]);
+    }
+
     public function test_duplicate_lead_is_skipped_when_name_and_address_match(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

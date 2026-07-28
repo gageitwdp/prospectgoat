@@ -53,11 +53,21 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('Discard');
     }
 
-    public function test_prospecting_page_renders_activity_dashboard(): void
+    public function test_prospecting_page_no_longer_renders_activity_dashboard_inline(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
         $response = $this->actingAs($admin)->get(route('admin.prospecting.index'));
+
+        $response->assertOk();
+        $response->assertDontSee('Quick Stats');
+    }
+
+    public function test_prospecting_activity_dashboard_is_available_as_separate_module(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('admin.prospecting.activity-dashboard'));
 
         $response->assertOk();
         $response->assertSee('Prospect Activity Dashboard');

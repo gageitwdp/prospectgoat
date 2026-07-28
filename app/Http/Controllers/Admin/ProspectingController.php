@@ -213,6 +213,16 @@ class ProspectingController extends Controller
         ]);
     }
 
+    public function activityDashboard(): View
+    {
+        $accountId = $this->requireCurrentAccountId();
+        $userId = auth()->id();
+
+        return view('admin.prospecting.activity-dashboard', [
+            'summary' => $this->buildActivitySummary($accountId, is_numeric($userId) ? (int) $userId : null),
+        ]);
+    }
+
     public function storePrivateScript(Request $request): JsonResponse
     {
         $accountId = $this->requireCurrentAccountId();

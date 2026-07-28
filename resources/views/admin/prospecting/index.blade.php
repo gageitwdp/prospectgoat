@@ -220,43 +220,6 @@
                 <article class="lp-card p-6 sm:p-8" x-show="rows.length > 0" x-cloak>
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p class="text-xs uppercase tracking-[0.2em] lp-muted">Prospect Activity Dashboard</p>
-                            <h2 class="mt-1 text-2xl font-semibold lp-title">Quick Stats</h2>
-                        </div>
-                        <div class="rounded-full bg-[var(--lp-canvas)] px-3 py-1 text-xs lp-muted">Live activity</div>
-                    </div>
-
-                    <div class="mt-6 grid gap-3 md:grid-cols-3">
-                        <template x-for="period in ['week', 'month', 'year']" :key="period">
-                            <div class="rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
-                                <p class="text-xs uppercase tracking-[0.14em] lp-muted" x-text="periodLabel(period)"></p>
-                                <p class="mt-2 text-2xl font-semibold lp-title" x-text="activitySummary[period]?.total ?? 0"></p>
-                                <div class="mt-3 flex flex-wrap gap-3 text-xs lp-muted">
-                                    <span>Called: <span class="font-semibold lp-title" x-text="activitySummary[period]?.called ?? 0"></span></span>
-                                    <span>Skipped: <span class="font-semibold lp-title" x-text="activitySummary[period]?.skipped ?? 0"></span></span>
-                                    <span>Voicemail: <span class="font-semibold lp-title" x-text="activitySummary[period]?.voicemail ?? 0"></span></span>
-                                    <span>Text: <span class="font-semibold lp-title" x-text="activitySummary[period]?.text ?? 0"></span></span>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="mt-4 rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
-                        <p class="text-xs uppercase tracking-[0.14em] lp-muted">Calls by Day</p>
-                        <div class="mt-3 space-y-2">
-                            <template x-for="item in activitySummary.daily_calls || []" :key="item.day">
-                                <div class="flex items-center justify-between rounded-lg border border-[var(--lp-border)] bg-white px-3 py-2 text-sm">
-                                    <span class="font-medium lp-title" x-text="item.day"></span>
-                                    <span class="font-semibold lp-title" x-text="item.count"></span>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="lp-card p-6 sm:p-8" x-show="rows.length > 0" x-cloak>
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
                             <p class="text-xs uppercase tracking-[0.2em] lp-muted">Scripts</p>
                             <h2 class="mt-1 text-2xl font-semibold lp-title">Prospecting Script Library</h2>
                         </div>

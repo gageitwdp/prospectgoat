@@ -6,7 +6,14 @@
         [
             'label' => 'Prospecting Tool',
             'route' => route('admin.prospecting.index'),
-            'active' => request()->routeIs('admin.prospecting.*'),
+            'active' => request()->routeIs('admin.prospecting.index'),
+            'status' => 'Live',
+            'module_key' => 'prospecting_tool',
+        ],
+        [
+            'label' => 'Prospect Activity Dashboard',
+            'route' => route('admin.prospecting.activity-dashboard'),
+            'active' => request()->routeIs('admin.prospecting.activity-dashboard'),
             'status' => 'Live',
             'module_key' => 'prospecting_tool',
         ],

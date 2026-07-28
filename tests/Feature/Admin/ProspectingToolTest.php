@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Lead;
+use App\Models\ProspectingCardStatus;
 use App\Models\ProspectingScript;
 use App\Models\ProspectingSession;
 use App\Models\User;
@@ -40,6 +41,60 @@ class ProspectingToolTest extends TestCase
         $response->assertOk();
         $response->assertSee('Quick Search');
         $response->assertSee('Search by name, address, or phone');
+    }
+
+    public function test_prospecting_page_renders_discard_button(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('admin.prospecting.index'));
+
+        $response->assertOk();
+        $response->assertSee('Discard');
+    }
+
+    public function test_prospecting_page_renders_activity_dashboard(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('admin.prospecting.index'));
+
+        $response->assertOk();
+        $response->assertSee('Prospect Activity Dashboard');
+        $response->assertSee('This Week');
+        $response->assertSee('This Month');
+        $response->assertSee('This Year');
+    }
+
+    public function test_admin_can_log_prospect_card_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.card-status'), [
+                'card_key' => 'card-1',
+                'skipped' => true,
+                'called' => false,
+                'left_voicemail' => true,
+                'sent_text' => false,
+            ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('message', 'Prospect card status saved.');
+
+        $this->assertDatabaseHas('prospecting_card_statuses', [
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'card_key' => 'card-1',
+            'skipped' => 1,
+            'called' => 0,
+            'left_voicemail' => 1,
+            'sent_text' => 0,
+        ]);
+
+        $this->assertInstanceOf(ProspectingCardStatus::class, ProspectingCardStatus::query()->where('card_key', 'card-1')->first());
     }
 
     public function test_manager_can_access_prospecting_module(): void

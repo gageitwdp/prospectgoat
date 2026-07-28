@@ -136,6 +136,8 @@ Route::middleware(['auth', 'billing.active', 'manager', 'module.enabled:prospect
     Route::post('/prospecting/parse-csv', [ProspectingController::class, 'parseCsv'])->name('prospecting.parse-csv');
     Route::post('/prospecting/session-state', [ProspectingController::class, 'updateSessionState'])->name('prospecting.session-state');
     Route::post('/prospecting/save-lead', [ProspectingController::class, 'storeLead'])->name('prospecting.save-lead');
+    Route::post('/prospecting/card-status', [ProspectingController::class, 'storeCardStatus'])->name('prospecting.card-status');
+    Route::get('/prospecting/activity-summary', [ProspectingController::class, 'activitySummary'])->name('prospecting.activity-summary');
 });
 
 Route::middleware('auth')->group(function () {

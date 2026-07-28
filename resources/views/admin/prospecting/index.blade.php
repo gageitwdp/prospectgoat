@@ -201,6 +201,9 @@
                         <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]" @click="openEmailModal">
                             Add Email
                         </button>
+                        <button type="button" class="rounded-xl border border-red-300 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50" @click="discardCurrentCard">
+                            Discard
+                        </button>
                         <button type="button" class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-accent" @click="saveLead" :disabled="savingLead">
                             <span x-show="!savingLead">Save Lead</span>
                             <span x-show="savingLead" x-cloak>Saving...</span>
@@ -212,6 +215,43 @@
                     <p class="mt-2 text-sm text-red-600" x-text="saveError" x-show="saveError" x-cloak></p>
                     <p class="mt-2 text-sm text-red-600" x-text="copyError" x-show="copyError" x-cloak></p>
                     <p class="mt-2 text-xs lp-muted" x-show="savedRows[currentIndex]" x-cloak>This card has already been saved in this session.</p>
+                </article>
+
+                <article class="lp-card p-6 sm:p-8" x-show="rows.length > 0" x-cloak>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.2em] lp-muted">Prospect Activity Dashboard</p>
+                            <h2 class="mt-1 text-2xl font-semibold lp-title">Quick Stats</h2>
+                        </div>
+                        <div class="rounded-full bg-[var(--lp-canvas)] px-3 py-1 text-xs lp-muted">Live activity</div>
+                    </div>
+
+                    <div class="mt-6 grid gap-3 md:grid-cols-3">
+                        <template x-for="period in ['week', 'month', 'year']" :key="period">
+                            <div class="rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
+                                <p class="text-xs uppercase tracking-[0.14em] lp-muted" x-text="periodLabel(period)"></p>
+                                <p class="mt-2 text-2xl font-semibold lp-title" x-text="activitySummary[period]?.total ?? 0"></p>
+                                <div class="mt-3 flex flex-wrap gap-3 text-xs lp-muted">
+                                    <span>Called: <span class="font-semibold lp-title" x-text="activitySummary[period]?.called ?? 0"></span></span>
+                                    <span>Skipped: <span class="font-semibold lp-title" x-text="activitySummary[period]?.skipped ?? 0"></span></span>
+                                    <span>Voicemail: <span class="font-semibold lp-title" x-text="activitySummary[period]?.voicemail ?? 0"></span></span>
+                                    <span>Text: <span class="font-semibold lp-title" x-text="activitySummary[period]?.text ?? 0"></span></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="mt-4 rounded-xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4">
+                        <p class="text-xs uppercase tracking-[0.14em] lp-muted">Calls by Day</p>
+                        <div class="mt-3 space-y-2">
+                            <template x-for="item in activitySummary.daily_calls || []" :key="item.day">
+                                <div class="flex items-center justify-between rounded-lg border border-[var(--lp-border)] bg-white px-3 py-2 text-sm">
+                                    <span class="font-medium lp-title" x-text="item.day"></span>
+                                    <span class="font-semibold lp-title" x-text="item.count"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                 </article>
 
                 <article class="lp-card p-6 sm:p-8" x-show="rows.length > 0" x-cloak>
@@ -326,6 +366,52 @@
                 </article>
             </section>
         </div>
+        <x-modal name="prospecting-status-modal" maxWidth="md">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold lp-title">Quick Prospect Status</h3>
+                <p class="mt-2 text-sm lp-muted">Capture a quick follow-up outcome for <span class="font-medium lp-title" x-text="statusModalProspectName"></span>.</p>
+
+                <div class="mt-5 space-y-3">
+                    <div class="flex items-center justify-between rounded-xl border border-[var(--lp-border)] px-4 py-3">
+                        <span class="text-sm font-medium lp-title">Skipped</span>
+                        <div class="flex gap-2">
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.skipped ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('skipped', true)">Yes</button>
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.skipped === false ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('skipped', false)">No</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between rounded-xl border border-[var(--lp-border)] px-4 py-3">
+                        <span class="text-sm font-medium lp-title">Called</span>
+                        <div class="flex gap-2">
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.called ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('called', true)">Yes</button>
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.called === false ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('called', false)">No</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between rounded-xl border border-[var(--lp-border)] px-4 py-3">
+                        <span class="text-sm font-medium lp-title">Left a Voicemail</span>
+                        <div class="flex gap-2">
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.left_voicemail ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('left_voicemail', true)">Yes</button>
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.left_voicemail === false ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('left_voicemail', false)">No</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between rounded-xl border border-[var(--lp-border)] px-4 py-3">
+                        <span class="text-sm font-medium lp-title">Sent a Text</span>
+                        <div class="flex gap-2">
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.sent_text ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('sent_text', true)">Yes</button>
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.sent_text === false ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('sent_text', false)">No</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title hover:bg-[var(--lp-canvas)]" @click="$dispatch('close-modal', 'prospecting-status-modal')">Cancel</button>
+                    <button type="button" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary" :disabled="statusModal.saving" @click="submitCardStatusAndAdvance">
+                        <span x-show="!statusModal.saving">Save & Continue</span>
+                        <span x-show="statusModal.saving" x-cloak>Saving...</span>
+                    </button>
+                </div>
+            </div>
+        </x-modal>
+
         <x-modal name="prospecting-phone-modal" maxWidth="md">
             <div class="p-6">
                 <h3 class="text-lg font-semibold lp-title">Add Phone Number</h3>
@@ -421,6 +507,11 @@
                 parseSuccess: '',
                 parseError: '',
                 saveSuccess: '',
+                activitySummary: @js($activitySummary ?? [
+                    'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
+                    'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
+                    'year' => ['total' => 0, 'called' => 0, 'voicemail' => 0, 'skipped' => 0, 'text' => 0],
+                ]),
                 saveError: '',
                 copySuccess: '',
                 copyError: '',
@@ -429,6 +520,14 @@
                 modalPhone: '',
                 modalEmail: '',
                 scriptPhone: '',
+                statusModal: {
+                    skipped: false,
+                    called: false,
+                    left_voicemail: false,
+                    sent_text: false,
+                    saving: false,
+                },
+                statusModalProspectName: '',
                 newScriptForm: {
                     name: '',
                     content: '',
@@ -440,10 +539,13 @@
                 privateScriptUpdateUrlTemplate: @js(route('admin.prospecting.scripts.update', ['prospectingScript' => '__SCRIPT_ID__'])),
                 sessionStateUrl: @js(route('admin.prospecting.session-state')),
                 saveUrl: @js(route('admin.prospecting.save-lead')),
+                cardStatusUrl: @js(route('admin.prospecting.card-status')),
+                activitySummaryUrl: @js(route('admin.prospecting.activity-summary')),
                 csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
 
                 init() {
                     this.restoreSessionState();
+                    this.refreshActivitySummary();
 
                     this.hideHandler = () => {
                         this.persistSessionState({ useKeepalive: true });
@@ -567,6 +669,57 @@
                 clearCopyMessages() {
                     this.copySuccess = '';
                     this.copyError = '';
+                },
+
+                periodLabel(period) {
+                    switch (period) {
+                        case 'week':
+                            return 'This Week';
+                        case 'month':
+                            return 'This Month';
+                        case 'year':
+                        default:
+                            return 'This Year';
+                    }
+                },
+
+                setStatusModalValue(key, value) {
+                    this.statusModal[key] = value;
+                },
+
+                resetStatusModal() {
+                    this.statusModal = {
+                        skipped: false,
+                        called: false,
+                        left_voicemail: false,
+                        sent_text: false,
+                        saving: false,
+                    };
+                    this.statusModalProspectName = this.currentRow?.owner_full_name || 'this prospect';
+                },
+
+                async refreshActivitySummary() {
+                    try {
+                        const response = await fetch(this.activitySummaryUrl, {
+                            method: 'GET',
+                            headers: {
+                                'X-CSRF-TOKEN': this.csrfToken,
+                                'Accept': 'application/json',
+                            },
+                        });
+
+                        if (!response.ok) {
+                            return;
+                        }
+
+                        const data = await response.json();
+
+                        if (data && typeof data === 'object') {
+                            this.activitySummary = data;
+                        }
+                    } catch (error) {
+                        // Intentionally silent.
+                    }
                 },
 
                 restoreSessionState() {
@@ -876,13 +1029,115 @@
                 },
 
                 nextCard() {
-                    if (this.currentIndex < this.rows.length - 1) {
+                    if (!this.currentRow || this.currentIndex >= this.rows.length - 1) {
+                        return;
+                    }
+
+                    this.resetStatusModal();
+                    this.$dispatch('open-modal', 'prospecting-status-modal');
+                },
+
+                async submitCardStatusAndAdvance() {
+                    if (!this.currentRow) {
+                        return;
+                    }
+
+                    this.statusModal.saving = true;
+
+                    try {
+                        const response = await fetch(this.cardStatusUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': this.csrfToken,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                card_key: this.currentCardKey(),
+                                skipped: Boolean(this.statusModal.skipped),
+                                called: Boolean(this.statusModal.called),
+                                left_voicemail: Boolean(this.statusModal.left_voicemail),
+                                sent_text: Boolean(this.statusModal.sent_text),
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const data = await response.json().catch(() => null);
+                            this.saveError = data?.message || 'Unable to save prospect status.';
+                            return;
+                        }
+
                         this.currentIndex += 1;
                         this.saveSuccess = '';
                         this.saveError = '';
                         this.clearCopyMessages();
                         this.persistSessionState();
+                        this.refreshActivitySummary();
+                        this.$dispatch('close-modal', 'prospecting-status-modal');
+                    } catch (error) {
+                        this.saveError = 'Unable to save prospect status.';
+                    } finally {
+                        this.statusModal.saving = false;
                     }
+                },
+
+                currentCardKey() {
+                    const row = this.currentRow;
+
+                    if (!row) {
+                        return `prospect-${this.currentIndex}`;
+                    }
+
+                    const fallback = [row.line, row.owner_full_name, row.property_full_address].filter(Boolean).join('|');
+
+                    return fallback || `prospect-${this.currentIndex}`;
+                },
+
+                discardCurrentCard() {
+                    if (!this.currentRow) {
+                        return;
+                    }
+
+                    const currentIndex = this.currentIndex;
+                    this.rows.splice(currentIndex, 1);
+
+                    const nextEdits = {};
+                    Object.entries(this.edits || {}).forEach(([key, value]) => {
+                        const index = Number(key);
+
+                        if (index < currentIndex) {
+                            nextEdits[index] = value;
+                        } else if (index > currentIndex) {
+                            nextEdits[index - 1] = value;
+                        }
+                    });
+
+                    const nextSavedRows = {};
+                    Object.entries(this.savedRows || {}).forEach(([key, value]) => {
+                        const index = Number(key);
+
+                        if (index < currentIndex) {
+                            nextSavedRows[index] = value;
+                        } else if (index > currentIndex) {
+                            nextSavedRows[index - 1] = value;
+                        }
+                    });
+
+                    this.edits = nextEdits;
+                    this.savedRows = nextSavedRows;
+
+                    if (this.rows.length === 0) {
+                        this.currentIndex = 0;
+                    } else if (currentIndex >= this.rows.length) {
+                        this.currentIndex = this.rows.length - 1;
+                    } else {
+                        this.currentIndex = currentIndex;
+                    }
+
+                    this.saveSuccess = '';
+                    this.saveError = '';
+                    this.clearCopyMessages();
+                    this.scheduleSessionPersist();
                 },
 
                 openPhoneModal() {

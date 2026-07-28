@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\ProspectingCardStatus;
 use App\Models\ProspectingScript;
 use App\Models\ProspectingSession;
 use App\Services\Prospecting\ProspectingScriptLibraryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -207,6 +209,7 @@ class ProspectingController extends Controller
                 'csv_filename' => $session->csv_filename,
                 'state' => $session->state,
             ] : null,
+            'activitySummary' => $this->buildActivitySummary($accountId, is_numeric($userId) ? (int) $userId : null),
         ]);
     }
 
@@ -462,6 +465,57 @@ class ProspectingController extends Controller
         return response()->json([
             'message' => 'Prospecting session state saved.',
         ]);
+    }
+
+    public function storeCardStatus(Request $request): JsonResponse
+    {
+        $accountId = $this->requireCurrentAccountId();
+        $userId = (int) ($request->user()?->id ?? 0);
+
+        if ($userId <= 0) {
+            return response()->json([
+                'message' => 'Unable to resolve user context.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'card_key' => ['required', 'string', 'max:255'],
+            'skipped' => ['required', 'boolean'],
+            'called' => ['required', 'boolean'],
+            'left_voicemail' => ['required', 'boolean'],
+            'sent_text' => ['required', 'boolean'],
+        ]);
+
+        ProspectingCardStatus::query()->updateOrCreate([
+            'account_id' => $accountId,
+            'user_id' => $userId,
+            'card_key' => trim((string) $data['card_key']),
+        ], [
+            'skipped' => (bool) $data['skipped'],
+            'called' => (bool) $data['called'],
+            'left_voicemail' => (bool) $data['left_voicemail'],
+            'sent_text' => (bool) $data['sent_text'],
+        ]);
+
+        return response()->json([
+            'message' => 'Prospect card status saved.',
+        ]);
+    }
+
+    public function activitySummary(Request $request): JsonResponse
+    {
+        $accountId = $this->requireCurrentAccountId();
+        $userId = (int) ($request->user()?->id ?? 0);
+
+        if ($userId <= 0) {
+            return response()->json([
+                'message' => 'Unable to resolve user context.',
+            ], 422);
+        }
+
+        $summary = $this->buildActivitySummary($accountId, $userId);
+
+        return response()->json($summary);
     }
 
     public function storeLead(Request $request): JsonResponse
@@ -891,6 +945,67 @@ class ProspectingController extends Controller
         }
 
         return trim($addressLine.' '.$zip);
+    }
+
+    private function buildActivitySummary(int $accountId, ?int $userId): array
+    {
+        if ($userId === null || $userId <= 0) {
+            return [
+                'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
+                'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
+                'year' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
+                'daily_calls' => [],
+            ];
+        }
+
+        $statuses = ProspectingCardStatus::query()
+            ->where('account_id', $accountId)
+            ->where('user_id', $userId)
+            ->where('created_at', '>=', now()->subDays(365))
+            ->get();
+
+        $summarize = function (string $label, Carbon $start) use ($statuses): array {
+            $matching = $statuses->filter(fn (ProspectingCardStatus $status) => $status->created_at && $status->created_at->gte($start));
+
+            $total = $matching->count();
+            $called = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->called)->count();
+            $skipped = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->skipped)->count();
+            $voicemail = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->left_voicemail)->count();
+            $text = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->sent_text)->count();
+
+            return [
+                'label' => $label,
+                'total' => $total,
+                'called' => $called,
+                'skipped' => $skipped,
+                'voicemail' => $voicemail,
+                'text' => $text,
+            ];
+        };
+
+        $dailyCalls = [];
+
+        for ($offset = 6; $offset >= 0; $offset--) {
+            $date = now()->subDays($offset)->toDateString();
+            $count = ProspectingCardStatus::query()
+                ->where('account_id', $accountId)
+                ->where('user_id', $userId)
+                ->whereDate('created_at', $date)
+                ->where('called', true)
+                ->count();
+
+            $dailyCalls[] = [
+                'day' => $date,
+                'count' => $count,
+            ];
+        }
+
+        return [
+            'week' => $summarize('This Week', now()->subDays(7)),
+            'month' => $summarize('This Month', now()->subDays(30)),
+            'year' => $summarize('This Year', now()->subDays(365)),
+            'daily_calls' => $dailyCalls,
+        ];
     }
 
     private function duplicateLeadExists(string $name, string $address, int $accountId): bool

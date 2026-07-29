@@ -488,6 +488,59 @@ CSV;
         $response->assertSee('script-99');
     }
 
+    public function test_prospecting_tool_persists_live_rows_and_current_index_in_session_state(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.session-state'), [
+                'csv_filename' => 'persisted-rows.csv',
+                'rows' => [
+                    [
+                        'line' => 2,
+                        'owner_full_name' => 'Live Owner One',
+                        'property_full_address' => '100 Live St, Marietta, GA 30062',
+                        'property_address' => '100 Live St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                    [
+                        'line' => 3,
+                        'owner_full_name' => 'Live Owner Two',
+                        'property_full_address' => '200 Live St, Marietta, GA 30062',
+                        'property_address' => '200 Live St',
+                        'property_city' => 'Marietta',
+                        'property_state' => 'GA',
+                        'property_zip' => '30062',
+                    ],
+                ],
+                'current_index' => 1,
+                'edits' => [
+                    '1' => [
+                        'phone' => '404-555-9000',
+                        'email' => 'live-two@example.com',
+                    ],
+                ],
+                'saved_rows' => ['1' => true],
+            ]);
+
+        $response->assertOk();
+
+        $session = ProspectingSession::query()
+            ->where('account_id', $admin->account_id)
+            ->where('user_id', $admin->id)
+            ->first();
+
+        $this->assertNotNull($session);
+        $this->assertSame(1, $session->state['current_index']);
+        $this->assertCount(2, $session->state['rows']);
+        $this->assertSame('Live Owner Two', $session->state['rows'][1]['owner_full_name']);
+        $this->assertSame('live-two@example.com', $session->state['edits']['1']['email']);
+    }
+
     public function test_admin_can_persist_prospecting_session_state(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

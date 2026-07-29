@@ -751,6 +751,7 @@
                             },
                             body: JSON.stringify({
                                 csv_filename: this.loadedFileName || null,
+                                rows: this.rows,
                                 current_index: this.currentIndex,
                                 edits: this.edits,
                                 saved_rows: this.savedRows,

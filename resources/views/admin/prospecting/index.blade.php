@@ -195,6 +195,9 @@
                         <button type="button" class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary" @click="openBeenVerified">
                             BeenVerified Lookup
                         </button>
+                        <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]" @click="openTruePeopleSearch">
+                            True People Search
+                        </button>
                         <button type="button" class="rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm font-medium lp-title hover:bg-[var(--lp-canvas)]" @click="openPhoneModal">
                             Add Phone
                         </button>
@@ -1240,6 +1243,32 @@
                     });
 
                     const url = `https://www.beenverified.com/rf/report/property?${params.toString()}`;
+                    window.open(url, '_blank', 'noopener');
+                },
+
+                openTruePeopleSearch() {
+                    if (!this.currentRow) {
+                        return;
+                    }
+
+                    const name = (this.currentRow.owner_full_name || '').trim();
+                    const cityStateZip = [
+                        this.currentRow.property_city || '',
+                        this.currentRow.property_state || '',
+                        this.currentRow.property_zip || '',
+                    ].filter(Boolean).join(' ').trim();
+
+                    const params = new URLSearchParams();
+
+                    if (name !== '') {
+                        params.set('name', name);
+                    }
+
+                    if (cityStateZip !== '') {
+                        params.set('citystatezip', cityStateZip);
+                    }
+
+                    const url = `https://www.truepeoplesearch.com/results${params.toString() ? `?${params.toString()}` : ''}`;
                     window.open(url, '_blank', 'noopener');
                 },
 

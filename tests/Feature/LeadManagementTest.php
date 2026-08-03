@@ -353,6 +353,45 @@ class LeadManagementTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_manager_leads_index_can_be_filtered_by_free_text_search(): void
+    {
+        $account = Account::factory()->activeBilling()->create();
+        $user = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'agent',
+        ]);
+
+        Lead::query()->create([
+            'account_id' => $account->id,
+            'created_by' => $user->id,
+            'name' => 'Alice Example',
+            'email' => 'alice@example.com',
+            'phone' => '555-1111',
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'new',
+        ]);
+
+        Lead::query()->create([
+            'account_id' => $account->id,
+            'created_by' => $user->id,
+            'name' => 'Bob Search',
+            'email' => 'bob@example.com',
+            'phone' => '555-2222',
+            'lead_type' => 'seller',
+            'source' => 'landing_page',
+            'status' => 'contacted',
+        ]);
+
+        foreach (['Alice Example', 'alice@example.com', '555-1111'] as $term) {
+            $response = $this->actingAs($user)->get(route('manager.leads.index', ['search' => $term]));
+
+            $response->assertOk();
+            $response->assertSee('Alice Example');
+            $response->assertDontSee('Bob Search');
+        }
+    }
+
     public function test_authenticated_user_can_view_new_lead_form(): void
     {
         $user = User::factory()->create(['role' => 'agent']);

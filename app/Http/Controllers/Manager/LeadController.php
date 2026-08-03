@@ -109,6 +109,7 @@ class LeadController extends Controller
     public function index(Request $request): View
     {
         $visibility = $request->string('visibility')->toString();
+        $search = $request->string('search')->toString();
 
         $query = Lead::query()
             ->tap(fn ($query) => $this->scopeLeadsForCurrentUser($query))
@@ -121,6 +122,7 @@ class LeadController extends Controller
         }
 
         $leads = $query
+            ->when($request->filled('search'), fn ($q) => $q->search($search))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('lead_type'), fn ($q) => $q->where('lead_type', $request->string('lead_type')))
             ->when($request->filled('source'), fn ($q) => $q->where('source', $request->string('source')))
@@ -135,12 +137,13 @@ class LeadController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
 
-        return view('manager.leads.index', compact('leads', 'managers', 'visibility'));
+        return view('manager.leads.index', compact('leads', 'managers', 'visibility', 'search'));
     }
 
     public function export(Request $request): Response
     {
         $visibility = $request->string('visibility')->toString();
+        $search = $request->string('search')->toString();
 
         $query = Lead::query()
             ->tap(fn ($query) => $this->scopeLeadsForCurrentUser($query))
@@ -154,6 +157,7 @@ class LeadController extends Controller
         }
 
         $leads = $query
+            ->when($request->filled('search'), fn ($q) => $q->search($search))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('lead_type'), fn ($q) => $q->where('lead_type', $request->string('lead_type')))
             ->when($request->filled('source'), fn ($q) => $q->where('source', $request->string('source')))

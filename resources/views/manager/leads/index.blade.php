@@ -30,7 +30,15 @@
         @endif
 
         <section class="lp-card p-5 sm:p-6">
-            <form method="GET" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <form method="GET" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ $search ?? '' }}"
+                    placeholder="Search by name, email, or phone"
+                    class="rounded-xl border border-[var(--lp-border)] px-3 py-2 text-sm sm:col-span-2 lg:col-span-2"
+                >
+
                 <select name="visibility" class="rounded-xl border border-[var(--lp-border)] px-3 py-2 text-sm">
                     <option value="">Active Leads</option>
                     <option value="deleted" @selected(($visibility ?? '') === 'deleted')>Deleted Leads</option>
@@ -65,7 +73,7 @@
                     @endforeach
                 </select>
 
-                <div class="sm:col-span-2 lg:col-span-4 flex gap-2">
+                <div class="sm:col-span-2 lg:col-span-5 flex gap-2">
                     <button type="submit" class="rounded-xl px-4 py-2 text-sm font-medium lp-btn-primary">Apply Filters</button>
                     <a href="{{ route('manager.leads.index') }}" class="rounded-xl border border-[var(--lp-border)] px-4 py-2 text-sm lp-title">Reset</a>
                 </div>

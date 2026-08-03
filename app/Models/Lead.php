@@ -135,4 +135,20 @@ class Lead extends Model
 
         return $query->where('created_by', $user->id);
     }
+
+    public function scopeSearch(Builder $query, ?string $search): Builder
+    {
+        $search = trim((string) $search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $searchQuery) use ($search): void {
+            $searchQuery
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%");
+        });
+    }
 }

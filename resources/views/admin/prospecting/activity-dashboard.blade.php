@@ -60,45 +60,41 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p class="text-xs uppercase tracking-[0.2em] lp-muted">Daily trend</p>
-                            <h2 class="mt-1 text-2xl font-semibold lp-title">Seven-day grouped activity bars</h2>
+                            <h2 class="mt-1 text-2xl font-semibold lp-title">Seven-day horizontal activity rows</h2>
                         </div>
-                        <p class="text-xs lp-muted">Each day shows calls, texts, voicemails, and skips side by side.</p>
+                        <p class="text-xs lp-muted">Each day gets its own row with horizontal meters for each activity type.</p>
                     </div>
 
-                    <div class="mt-6 overflow-x-auto pb-2">
-                        <div class="space-y-4">
-                            <template x-for="row in dailyRows" :key="row.start">
-                                <div class="grid gap-3" :class="row.count === 4 ? 'min-w-[840px] grid-cols-4' : 'min-w-[630px] grid-cols-3'">
-                                    <template x-for="day in (summary.daily_activity || []).slice(row.start, row.start + row.count)" :key="day.date">
-                                        <div class="rounded-2xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-3">
-                                            <div class="flex h-56 items-end gap-2">
-                                                <template x-for="segment in barSegments.concat([{ key: 'skipped', label: 'Skipped', className: 'bg-slate-300' }])" :key="`${day.date}-${segment.key}`">
-                                                    <div class="flex w-full flex-col items-center gap-2">
-                                                        <div class="flex h-44 w-full items-end justify-center">
-                                                            <div
-                                                                class="w-full rounded-t-lg transition-all duration-300"
-                                                                :class="segment.className"
-                                                                :style="segmentHeight(day[segment.key] ?? 0, summary.max_daily_total ?? 0)"
-                                                            ></div>
-                                                        </div>
-                                                        <div class="text-center">
-                                                            <p class="text-[10px] uppercase tracking-[0.08em] lp-muted" x-text="segment.label"></p>
-                                                            <p class="text-xs font-semibold lp-title" x-text="day[segment.key] ?? 0"></p>
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                            </div>
+                    <div class="mt-6 space-y-4">
+                        <template x-for="day in summary.daily_activity || []" :key="day.date">
+                            <div class="rounded-2xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-4 sm:p-5">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-sm font-medium lp-title" x-text="day.day"></p>
+                                        <p class="text-[11px] lp-muted">
+                                            <span x-text="day.total"></span> total activity
+                                        </p>
+                                    </div>
+                                    <span class="rounded-full border border-[var(--lp-border)] bg-white px-2.5 py-1 text-[11px] lp-muted" x-text="day.date"></span>
+                                </div>
 
-                                            <div class="mt-3 text-center">
-                                                <p class="text-xs font-medium lp-title" x-text="day.day"></p>
-                                                <p class="text-[11px] lp-muted">
-                                                    <span x-text="day.total"></span> total
-                                                </p>
+                                <div class="mt-4 space-y-3">
+                                    <template x-for="segment in barSegments.concat([{ key: 'skipped', label: 'Skipped', className: 'bg-slate-300' }])" :key="`${day.date}-${segment.key}`">
+                                        <div class="grid gap-2 sm:grid-cols-[110px,1fr,44px] sm:items-center">
+                                            <p class="text-xs uppercase tracking-[0.08em] lp-muted" x-text="segment.label"></p>
+                                            <div class="h-3 overflow-hidden rounded-full bg-white">
+                                                <div
+                                                    class="h-3 rounded-full transition-all duration-300"
+                                                    :class="segment.className"
+                                                    :style="segmentWidth(day[segment.key] ?? 0, summary.max_daily_total ?? 0)"
+                                                ></div>
                                             </div>
+                                            <p class="text-right text-xs font-semibold lp-title" x-text="day[segment.key] ?? 0"></p>
                                         </div>
                                     </template>
                                 </div>
-                            </template>
+                            </div>
+                        </template>
                         </div>
                     </div>
                 </article>
@@ -220,11 +216,6 @@
                     { key: 'week', label: 'This Week' },
                     { key: 'month', label: 'This Month' },
                     { key: 'year', label: 'This Year' },
-                ],
-                dailyRows: [
-                    { start: 0, count: 3 },
-                    { start: 3, count: 2 },
-                    { start: 5, count: 2 },
                 ],
                 barSegments: [
                     { key: 'called', label: 'Calls', className: 'bg-slate-900' },

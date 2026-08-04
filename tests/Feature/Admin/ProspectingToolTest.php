@@ -74,7 +74,7 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('Prospect Activity Dashboard');
         $response->assertSee('Track action outcomes with bars instead of raw counts');
         $response->assertSee('Log off-app activity');
-        $response->assertSee('Seven-day grouped activity bars');
+        $response->assertSee('Seven-day horizontal activity rows');
         $response->assertSee('Calls');
         $response->assertSee('Texts');
         $response->assertSee('Voicemails');

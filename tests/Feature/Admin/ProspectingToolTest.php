@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Lead;
+use App\Models\ProspectingActivityEntry;
 use App\Models\ProspectingCardStatus;
 use App\Models\ProspectingScript;
 use App\Models\ProspectingSession;
@@ -71,9 +72,43 @@ class ProspectingToolTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Prospect Activity Dashboard');
-        $response->assertSee('This Week');
-        $response->assertSee('This Month');
-        $response->assertSee('This Year');
+        $response->assertSee('Track action outcomes with bars instead of raw counts');
+        $response->assertSee('Log off-app activity');
+        $response->assertSee('Seven-day stacked activity bars');
+    }
+
+    public function test_admin_can_log_off_app_activity_for_prospecting_dashboard(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->withHeader('X-CSRF-TOKEN', 'test-token')
+            ->postJson(route('admin.prospecting.activity-entries.store'), [
+                'activity_date' => now()->toDateString(),
+                'calls' => 2,
+                'texts' => 1,
+                'voicemails' => 1,
+                'notes' => 'Logged after a callback block.',
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('message', 'Off-app activity logged.');
+        $response->assertJsonPath('summary.week.total', 4);
+        $response->assertJsonPath('summary.week.called', 2);
+        $response->assertJsonPath('summary.week.text', 1);
+        $response->assertJsonPath('summary.week.voicemail', 1);
+
+        $this->assertDatabaseCount('prospecting_activity_entries', 3);
+        $this->assertDatabaseHas('prospecting_activity_entries', [
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'activity_date' => now()->startOfDay()->toDateTimeString(),
+            'activity_type' => 'call',
+            'quantity' => 2,
+        ]);
+
+        $this->assertInstanceOf(ProspectingActivityEntry::class, ProspectingActivityEntry::query()->first());
     }
 
     public function test_admin_can_log_prospect_card_status(): void

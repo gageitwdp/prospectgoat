@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\ProspectingActivityEntry;
 use App\Models\ProspectingCardStatus;
 use App\Models\ProspectingScript;
 use App\Models\ProspectingSession;
@@ -221,6 +222,63 @@ class ProspectingController extends Controller
         return view('admin.prospecting.activity-dashboard', [
             'summary' => $this->buildActivitySummary($accountId, is_numeric($userId) ? (int) $userId : null),
         ]);
+    }
+
+    public function storeActivityEntry(Request $request): JsonResponse
+    {
+        abort_if($this->currentUserIsGlobalAdmin(), 403);
+
+        $accountId = $this->requireCurrentAccountId();
+        $userId = (int) ($request->user()?->id ?? 0);
+
+        if ($userId <= 0) {
+            return response()->json([
+                'message' => 'Unable to resolve user context.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'activity_date' => ['required', 'date'],
+            'calls' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'texts' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'voicemails' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $counts = [
+            'call' => (int) ($data['calls'] ?? 0),
+            'text' => (int) ($data['texts'] ?? 0),
+            'voicemail' => (int) ($data['voicemails'] ?? 0),
+        ];
+
+        if (array_sum($counts) <= 0) {
+            return response()->json([
+                'message' => 'Add at least one call, text, or voicemail.',
+            ], 422);
+        }
+
+        $notes = trim((string) ($data['notes'] ?? ''));
+        $activityDate = Carbon::parse($data['activity_date'])->toDateString();
+
+        foreach ($counts as $activityType => $quantity) {
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            ProspectingActivityEntry::query()->create([
+                'account_id' => $accountId,
+                'user_id' => $userId,
+                'activity_date' => $activityDate,
+                'activity_type' => $activityType,
+                'quantity' => $quantity,
+                'notes' => $notes !== '' ? $notes : null,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Off-app activity logged.',
+            'summary' => $this->buildActivitySummary($accountId, $userId),
+        ], 201);
     }
 
     public function storePrivateScript(Request $request): JsonResponse
@@ -964,28 +1022,39 @@ class ProspectingController extends Controller
                 'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
                 'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
                 'year' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
-                'daily_calls' => [],
+                'daily_activity' => [],
+                'max_daily_total' => 0,
             ];
         }
 
-        $statuses = ProspectingCardStatus::query()
+        $statusQuery = ProspectingCardStatus::query()
             ->where('account_id', $accountId)
             ->where('user_id', $userId)
-            ->where('created_at', '>=', now()->subDays(365))
+            ->where('created_at', '>=', now()->subDays(365));
+
+        $statuses = $statusQuery->get();
+
+        $manualEntries = ProspectingActivityEntry::query()
+            ->where('account_id', $accountId)
+            ->where('user_id', $userId)
+            ->where('activity_date', '>=', now()->subDays(365)->toDateString())
             ->get();
 
-        $summarize = function (string $label, Carbon $start) use ($statuses): array {
-            $matching = $statuses->filter(fn (ProspectingCardStatus $status) => $status->created_at && $status->created_at->gte($start));
+        $summarize = function (string $label, Carbon $start) use ($statuses, $manualEntries): array {
+            $matchingStatuses = $statuses->filter(fn (ProspectingCardStatus $status) => $status->created_at && $status->created_at->gte($start));
+            $matchingManualEntries = $manualEntries->filter(fn (ProspectingActivityEntry $entry) => $entry->activity_date && Carbon::parse($entry->activity_date)->gte($start));
 
-            $total = $matching->count();
-            $called = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->called)->count();
-            $skipped = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->skipped)->count();
-            $voicemail = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->left_voicemail)->count();
-            $text = $matching->filter(fn (ProspectingCardStatus $status) => (bool) $status->sent_text)->count();
+            $called = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) $status->called)->count()
+                + $matchingManualEntries->where('activity_type', 'call')->sum('quantity');
+            $skipped = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) $status->skipped)->count();
+            $voicemail = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) $status->left_voicemail)->count()
+                + $matchingManualEntries->where('activity_type', 'voicemail')->sum('quantity');
+            $text = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) $status->sent_text)->count()
+                + $matchingManualEntries->where('activity_type', 'text')->sum('quantity');
 
             return [
                 'label' => $label,
-                'total' => $total,
+                'total' => $matchingStatuses->count() + $matchingManualEntries->sum(fn (ProspectingActivityEntry $entry) => max(1, (int) $entry->quantity)),
                 'called' => $called,
                 'skipped' => $skipped,
                 'voicemail' => $voicemail,
@@ -993,28 +1062,72 @@ class ProspectingController extends Controller
             ];
         };
 
-        $dailyCalls = [];
+        $dailyActivity = [];
 
         for ($offset = 6; $offset >= 0; $offset--) {
-            $date = now()->subDays($offset)->toDateString();
-            $count = ProspectingCardStatus::query()
-                ->where('account_id', $accountId)
-                ->where('user_id', $userId)
-                ->whereDate('created_at', $date)
-                ->where('called', true)
-                ->count();
+            $day = now()->subDays($offset);
+            $date = $day->toDateString();
 
-            $dailyCalls[] = [
-                'day' => $date,
-                'count' => $count,
+            $dailyActivity[$date] = [
+                'day' => $day->format('D, M j'),
+                'date' => $date,
+                'total' => 0,
+                'called' => 0,
+                'skipped' => 0,
+                'voicemail' => 0,
+                'text' => 0,
             ];
         }
+
+        foreach ($statuses as $status) {
+            if (! $status->created_at) {
+                continue;
+            }
+
+            $date = $status->created_at->toDateString();
+
+            if (! array_key_exists($date, $dailyActivity)) {
+                continue;
+            }
+
+            $dailyActivity[$date]['total']++;
+            $dailyActivity[$date]['called'] += (int) $status->called;
+            $dailyActivity[$date]['skipped'] += (int) $status->skipped;
+            $dailyActivity[$date]['voicemail'] += (int) $status->left_voicemail;
+            $dailyActivity[$date]['text'] += (int) $status->sent_text;
+        }
+
+        foreach ($manualEntries as $entry) {
+            $date = Carbon::parse($entry->activity_date)->toDateString();
+
+            if (! array_key_exists($date, $dailyActivity)) {
+                continue;
+            }
+
+            $quantity = max(1, (int) $entry->quantity);
+            $dailyActivity[$date]['total'] += $quantity;
+
+            $summaryKey = match ($entry->activity_type) {
+                'call' => 'called',
+                'text' => 'text',
+                'voicemail' => 'voicemail',
+                default => null,
+            };
+
+            if ($summaryKey !== null) {
+                $dailyActivity[$date][$summaryKey] += $quantity;
+            }
+        }
+
+        $dailyActivityValues = array_values($dailyActivity);
+        $maxDailyTotal = collect($dailyActivityValues)->max('total') ?? 0;
 
         return [
             'week' => $summarize('This Week', now()->subDays(7)),
             'month' => $summarize('This Month', now()->subDays(30)),
             'year' => $summarize('This Year', now()->subDays(365)),
-            'daily_calls' => $dailyCalls,
+            'daily_activity' => $dailyActivityValues,
+            'max_daily_total' => $maxDailyTotal,
         ];
     }
 

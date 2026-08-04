@@ -94,6 +94,11 @@
                     </div>
 
                     <div class="sm:col-span-2">
+                        <label class="mb-1 block text-sm font-medium lp-title">Free notes</label>
+                        <textarea name="prospecting_notes" rows="4" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">{{ old('prospecting_notes', $lead->prospecting_notes) }}</textarea>
+                    </div>
+
+                    <div class="sm:col-span-2">
                         <button type="submit" class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary">Save Lead</button>
                     </div>
                 </form>
@@ -234,67 +239,118 @@
                 <article class="lp-card p-6">
                     <h3 class="lp-title text-lg font-semibold">Buyer Qualification</h3>
 
-                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                    <form method="POST" action="{{ route('manager.leads.update', $lead) }}" class="mt-5 grid gap-4 sm:grid-cols-2">
+                        @csrf
+                        @method('PUT')
+
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Move timeline</p>
-                            <p class="mt-1 text-sm lp-title">{{ $timelineLabels[$lead->move_timeline] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Move timeline</label>
+                            <select name="move_timeline" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($timelineLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('move_timeline', $lead->move_timeline) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">If not found</p>
-                            <p class="mt-1 text-sm lp-title">{{ $moveIfNotFoundLabels[$lead->move_if_not_found] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">If not found</label>
+                            <select name="move_if_not_found" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($moveIfNotFoundLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('move_if_not_found', $lead->move_if_not_found) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Price range</p>
-                            <p class="mt-1 text-sm lp-title">{{ $priceRangeLabels[$lead->price_range] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Price range</label>
+                            <select name="price_range" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($priceRangeLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('price_range', $lead->price_range) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Mortgage status</p>
-                            <p class="mt-1 text-sm lp-title">{{ $mortgageLabels[$lead->mortgage_preapproval_status] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Mortgage status</label>
+                            <select name="mortgage_preapproval_status" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($mortgageLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('mortgage_preapproval_status', $lead->mortgage_preapproval_status) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Need to sell first</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellLabels[$lead->need_to_sell_current_home] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Need to sell first</label>
+                            <select name="need_to_sell_current_home" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('need_to_sell_current_home', $lead->need_to_sell_current_home) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Agent relationship</p>
-                            <p class="mt-1 text-sm lp-title">{{ $agentLabels[$lead->agent_relationship] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Agent relationship</label>
+                            <select name="agent_relationship" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($agentLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('agent_relationship', $lead->agent_relationship) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Reason for buying</p>
-                            <p class="mt-1 text-sm lp-title">{{ $reasonLabels[$lead->purchase_reason] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Reason for buying</label>
+                            <select name="purchase_reason" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($reasonLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('purchase_reason', $lead->purchase_reason) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Preferred contact</p>
-                            <p class="mt-1 text-sm lp-title">{{ $contactLabels[$lead->preferred_contact_method] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Preferred contact</label>
+                            <select name="preferred_contact_method" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($contactLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('preferred_contact_method', $lead->preferred_contact_method) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="sm:col-span-2">
-                            <p class="text-xs uppercase tracking-wider lp-muted">Target areas</p>
-                            <p class="mt-1 text-sm lp-title">{{ $lead->target_areas ?: 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Target areas</label>
+                            <input name="target_areas" type="text" value="{{ old('target_areas', $lead->target_areas) }}" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" />
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Minimum bedrooms</p>
-                            <p class="mt-1 text-sm lp-title">{{ $lead->min_bedrooms ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Minimum bedrooms</label>
+                            <input name="min_bedrooms" type="number" min="0" value="{{ old('min_bedrooms', $lead->min_bedrooms) }}" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" />
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Minimum bathrooms</p>
-                            <p class="mt-1 text-sm lp-title">{{ $lead->min_bathrooms ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Minimum bathrooms</label>
+                            <input name="min_bathrooms" type="number" step="0.5" min="0" value="{{ old('min_bathrooms', $lead->min_bathrooms) }}" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" />
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Working with agent</p>
-                            <p class="mt-1 text-sm lp-title">{{ $lead->working_with_agent ? 'Yes' : 'No' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Working with agent</label>
+                            <select name="working_with_agent" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                <option value="1" @selected(old('working_with_agent', (int) $lead->working_with_agent) === 1)>Yes</option>
+                                <option value="0" @selected(old('working_with_agent', (int) $lead->working_with_agent) === 0)>No</option>
+                            </select>
                         </div>
-                    </div>
+
+                        <div class="sm:col-span-2">
+                            <button type="submit" class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary">Save Buyer Details</button>
+                        </div>
+                    </form>
                 </article>
             @endif
 
@@ -302,57 +358,104 @@
                 <article class="lp-card p-6">
                     <h3 class="lp-title text-lg font-semibold">Seller Qualification</h3>
 
-                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                    <form method="POST" action="{{ route('manager.leads.update', $lead) }}" class="mt-5 grid gap-4 sm:grid-cols-2">
+                        @csrf
+                        @method('PUT')
+
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Timeline</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerTimelineLabels[$lead->seller_timeline] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Timeline</label>
+                            <select name="seller_timeline" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerTimelineLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_timeline', $lead->seller_timeline) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Motivation</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerMotivationLabels[$lead->seller_motivation] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Motivation</label>
+                            <select name="seller_motivation" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerMotivationLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_motivation', $lead->seller_motivation) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Estimated value</p>
-                            <p class="mt-1 text-sm lp-title">{{ $lead->seller_estimated_home_value ?: 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Estimated value</label>
+                            <input name="seller_estimated_home_value" type="text" value="{{ old('seller_estimated_home_value', $lead->seller_estimated_home_value) }}" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" />
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Mortgage status</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerMortgageLabels[$lead->seller_mortgage_status] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Mortgage status</label>
+                            <select name="seller_mortgage_status" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerMortgageLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_mortgage_status', $lead->seller_mortgage_status) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Need to buy next</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerBuyAfterLabels[$lead->seller_needs_to_buy_another_home_after_selling] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Need to buy next</label>
+                            <select name="seller_needs_to_buy_another_home_after_selling" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerBuyAfterLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_needs_to_buy_another_home_after_selling', $lead->seller_needs_to_buy_another_home_after_selling) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Property condition</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerConditionLabels[$lead->seller_property_condition] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Property condition</label>
+                            <select name="seller_property_condition" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerConditionLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_property_condition', $lead->seller_property_condition) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="sm:col-span-2">
-                            <p class="text-xs uppercase tracking-wider lp-muted">Major upgrades</p>
-                            <p class="mt-1 text-sm lp-title">{{ $lead->seller_major_upgrades ?: 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Major upgrades</label>
+                            <input name="seller_major_upgrades" type="text" value="{{ old('seller_major_upgrades', $lead->seller_major_upgrades) }}" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm" />
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Agent commitment</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerAgentLabels[$lead->seller_agent_commitment] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Agent commitment</label>
+                            <select name="seller_agent_commitment" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerAgentLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_agent_commitment', $lead->seller_agent_commitment) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div>
-                            <p class="text-xs uppercase tracking-wider lp-muted">Occupancy</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerOccupancyLabels[$lead->seller_occupancy_status] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Occupancy</label>
+                            <select name="seller_occupancy_status" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerOccupancyLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_occupancy_status', $lead->seller_occupancy_status) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="sm:col-span-2">
-                            <p class="text-xs uppercase tracking-wider lp-muted">Valuation delivery</p>
-                            <p class="mt-1 text-sm lp-title">{{ $sellerDeliveryLabels[$lead->seller_valuation_delivery_method] ?? 'Not provided' }}</p>
+                            <label class="mb-1 block text-sm font-medium lp-title">Valuation delivery</label>
+                            <select name="seller_valuation_delivery_method" class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm">
+                                <option value="">Not provided</option>
+                                @foreach ($sellerDeliveryLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('seller_valuation_delivery_method', $lead->seller_valuation_delivery_method) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                    </div>
+
+                        <div class="sm:col-span-2">
+                            <button type="submit" class="rounded-xl px-4 py-2.5 text-sm font-medium lp-btn-primary">Save Seller Details</button>
+                        </div>
+                    </form>
                 </article>
             @endif
 

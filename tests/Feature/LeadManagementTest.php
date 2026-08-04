@@ -392,6 +392,70 @@ class LeadManagementTest extends TestCase
         }
     }
 
+    public function test_admin_can_update_lead_notes_and_buyer_qualification_details(): void
+    {
+        $account = Account::factory()->activeBilling()->create();
+        $admin = User::factory()->create([
+            'account_id' => $account->id,
+            'role' => 'admin',
+        ]);
+
+        $lead = Lead::query()->create([
+            'account_id' => $account->id,
+            'created_by' => $admin->id,
+            'name' => 'Buyer Lead',
+            'email' => 'buyer@example.com',
+            'phone' => '555-0000',
+            'address' => '123 Main St',
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'new',
+        ]);
+
+        $response = $this->actingAs($admin)->put(route('manager.leads.update', $lead), [
+            'name' => 'Buyer Lead',
+            'email' => 'buyer@example.com',
+            'phone' => '555-0000',
+            'address' => '123 Main St',
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'new',
+            'assigned_to' => null,
+            'prospecting_notes' => 'Follow up this buyer next week.',
+            'move_timeline' => 'one_to_three_months',
+            'move_if_not_found' => 'must_move',
+            'price_range' => '400k_500k',
+            'mortgage_preapproval_status' => 'pre_approved',
+            'need_to_sell_current_home' => 'yes',
+            'agent_relationship' => 'none',
+            'purchase_reason' => 'first_time_homebuyer',
+            'target_areas' => 'Canton, Woodstock',
+            'min_bedrooms' => 3,
+            'min_bathrooms' => 2,
+            'preferred_contact_method' => 'text',
+            'working_with_agent' => true,
+        ]);
+
+        $response->assertSessionHas('status', 'Lead updated successfully.');
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $lead->id,
+            'prospecting_notes' => 'Follow up this buyer next week.',
+            'move_timeline' => 'one_to_three_months',
+            'move_if_not_found' => 'must_move',
+            'price_range' => '400k_500k',
+            'mortgage_preapproval_status' => 'pre_approved',
+            'need_to_sell_current_home' => 'yes',
+            'agent_relationship' => 'none',
+            'purchase_reason' => 'first_time_homebuyer',
+            'target_areas' => 'Canton, Woodstock',
+            'min_bedrooms' => 3,
+            'min_bathrooms' => 2,
+            'preferred_contact_method' => 'text',
+            'working_with_agent' => true,
+        ]);
+    }
+
     public function test_authenticated_user_can_view_new_lead_form(): void
     {
         $user = User::factory()->create(['role' => 'agent']);

@@ -14,7 +14,6 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p class="text-xs uppercase tracking-[0.2em] lp-muted">Prospect Activity Dashboard</p>
-                            <h1 class="mt-1 text-2xl font-semibold lp-title">Track action outcomes with bars instead of raw counts</h1>
                         </div>
                         <div class="rounded-full bg-[var(--lp-canvas)] px-3 py-1 text-xs lp-muted">Live activity</div>
                     </div>

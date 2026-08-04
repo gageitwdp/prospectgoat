@@ -222,8 +222,9 @@
                     { key: 'year', label: 'This Year' },
                 ],
                 dailyRows: [
-                    { start: 0, count: 4 },
-                    { start: 4, count: 3 },
+                    { start: 0, count: 3 },
+                    { start: 3, count: 2 },
+                    { start: 5, count: 2 },
                 ],
                 barSegments: [
                     { key: 'called', label: 'Calls', className: 'bg-slate-900' },

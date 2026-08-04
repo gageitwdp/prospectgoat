@@ -1064,7 +1064,7 @@ class ProspectingController extends Controller
 
         $dailyActivity = [];
 
-        for ($offset = 6; $offset >= 0; $offset--) {
+        for ($offset = 0; $offset <= 6; $offset++) {
             $day = now()->subDays($offset);
             $date = $day->toDateString();
 

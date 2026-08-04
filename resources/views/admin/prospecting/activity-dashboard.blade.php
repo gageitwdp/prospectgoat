@@ -66,33 +66,37 @@
                     </div>
 
                     <div class="mt-6 overflow-x-auto pb-2">
-                        <div class="grid min-w-[980px] grid-cols-7 gap-3 items-end">
-                            <template x-for="day in summary.daily_activity || []" :key="day.date">
-                                <div class="rounded-2xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-3">
-                                    <div class="flex h-56 items-end gap-2">
-                                        <template x-for="segment in barSegments.concat([{ key: 'skipped', label: 'Skipped', className: 'bg-slate-300' }])" :key="`${day.date}-${segment.key}`">
-                                            <div class="flex w-full flex-col items-center gap-2">
-                                                <div class="flex h-44 w-full items-end justify-center">
-                                                    <div
-                                                        class="w-full rounded-t-lg transition-all duration-300"
-                                                        :class="segment.className"
-                                                        :style="segmentHeight(day[segment.key] ?? 0, summary.max_daily_total ?? 0)"
-                                                    ></div>
-                                                </div>
-                                                <div class="text-center">
-                                                    <p class="text-[10px] uppercase tracking-[0.08em] lp-muted" x-text="segment.label"></p>
-                                                    <p class="text-xs font-semibold lp-title" x-text="day[segment.key] ?? 0"></p>
-                                                </div>
+                        <div class="space-y-4">
+                            <template x-for="row in dailyRows" :key="row.start">
+                                <div class="grid gap-3" :class="row.count === 4 ? 'min-w-[840px] grid-cols-4' : 'min-w-[630px] grid-cols-3'">
+                                    <template x-for="day in (summary.daily_activity || []).slice(row.start, row.start + row.count)" :key="day.date">
+                                        <div class="rounded-2xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-3">
+                                            <div class="flex h-56 items-end gap-2">
+                                                <template x-for="segment in barSegments.concat([{ key: 'skipped', label: 'Skipped', className: 'bg-slate-300' }])" :key="`${day.date}-${segment.key}`">
+                                                    <div class="flex w-full flex-col items-center gap-2">
+                                                        <div class="flex h-44 w-full items-end justify-center">
+                                                            <div
+                                                                class="w-full rounded-t-lg transition-all duration-300"
+                                                                :class="segment.className"
+                                                                :style="segmentHeight(day[segment.key] ?? 0, summary.max_daily_total ?? 0)"
+                                                            ></div>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <p class="text-[10px] uppercase tracking-[0.08em] lp-muted" x-text="segment.label"></p>
+                                                            <p class="text-xs font-semibold lp-title" x-text="day[segment.key] ?? 0"></p>
+                                                        </div>
+                                                    </div>
+                                                </template>
                                             </div>
-                                        </template>
-                                    </div>
 
-                                    <div class="mt-3 text-center">
-                                        <p class="text-xs font-medium lp-title" x-text="day.day"></p>
-                                        <p class="text-[11px] lp-muted">
-                                            <span x-text="day.total"></span> total
-                                        </p>
-                                    </div>
+                                            <div class="mt-3 text-center">
+                                                <p class="text-xs font-medium lp-title" x-text="day.day"></p>
+                                                <p class="text-[11px] lp-muted">
+                                                    <span x-text="day.total"></span> total
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                         </div>
@@ -216,6 +220,10 @@
                     { key: 'week', label: 'This Week' },
                     { key: 'month', label: 'This Month' },
                     { key: 'year', label: 'This Year' },
+                ],
+                dailyRows: [
+                    { start: 0, count: 4 },
+                    { start: 4, count: 3 },
                 ],
                 barSegments: [
                     { key: 'called', label: 'Calls', className: 'bg-slate-900' },

@@ -18,8 +18,8 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['account_id', 'user_id', 'activity_date']);
-            $table->index(['account_id', 'user_id', 'activity_type']);
+            $table->index(['account_id', 'user_id', 'activity_date'], 'pae_acct_user_date_idx');
+            $table->index(['account_id', 'user_id', 'activity_type'], 'pae_acct_user_type_idx');
         });
     }
 

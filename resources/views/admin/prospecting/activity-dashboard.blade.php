@@ -60,32 +60,34 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p class="text-xs uppercase tracking-[0.2em] lp-muted">Daily trend</p>
-                            <h2 class="mt-1 text-2xl font-semibold lp-title">Seven-day stacked activity bars</h2>
+                            <h2 class="mt-1 text-2xl font-semibold lp-title">Seven-day grouped activity bars</h2>
                         </div>
-                        <p class="text-xs lp-muted">Calls, texts, and voicemails combine with app-tracked activity.</p>
+                        <p class="text-xs lp-muted">Each day shows calls, texts, voicemails, and skips side by side.</p>
                     </div>
 
                     <div class="mt-6 overflow-x-auto pb-2">
-                        <div class="grid min-w-[720px] grid-cols-7 gap-3 items-end">
+                        <div class="grid min-w-[980px] grid-cols-7 gap-3 items-end">
                             <template x-for="day in summary.daily_activity || []" :key="day.date">
-                                <div class="flex flex-col items-center gap-3">
-                                    <div class="flex h-48 w-full items-end justify-center rounded-2xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-3">
-                                        <div class="flex h-full w-full max-w-[52px] flex-col-reverse justify-start gap-1">
-                                            <template x-for="segment in barSegments" :key="`${day.date}-${segment.key}`">
-                                                <div
-                                                    class="w-full rounded-t-lg transition-all duration-300"
-                                                    :class="segment.className"
-                                                    :style="segmentHeight(day[segment.key] ?? 0, summary.max_daily_total ?? 0)"
-                                                ></div>
-                                            </template>
-                                            <div
-                                                class="w-full rounded-t-lg bg-slate-200 transition-all duration-300"
-                                                :style="segmentHeight(day.skipped ?? 0, summary.max_daily_total ?? 0)"
-                                            ></div>
-                                        </div>
+                                <div class="rounded-2xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] p-3">
+                                    <div class="flex h-56 items-end gap-2">
+                                        <template x-for="segment in barSegments.concat([{ key: 'skipped', label: 'Skipped', className: 'bg-slate-300' }])" :key="`${day.date}-${segment.key}`">
+                                            <div class="flex w-full flex-col items-center gap-2">
+                                                <div class="flex h-44 w-full items-end justify-center">
+                                                    <div
+                                                        class="w-full rounded-t-lg transition-all duration-300"
+                                                        :class="segment.className"
+                                                        :style="segmentHeight(day[segment.key] ?? 0, summary.max_daily_total ?? 0)"
+                                                    ></div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <p class="text-[10px] uppercase tracking-[0.08em] lp-muted" x-text="segment.label"></p>
+                                                    <p class="text-xs font-semibold lp-title" x-text="day[segment.key] ?? 0"></p>
+                                                </div>
+                                            </div>
+                                        </template>
                                     </div>
 
-                                    <div class="text-center">
+                                    <div class="mt-3 text-center">
                                         <p class="text-xs font-medium lp-title" x-text="day.day"></p>
                                         <p class="text-[11px] lp-muted">
                                             <span x-text="day.total"></span> total
@@ -107,46 +109,46 @@
                             </p>
 
                             <form class="mt-6 space-y-4" @submit.prevent="submitActivityEntry">
-                                <div class="grid gap-4 sm:grid-cols-2">
-                                    <div>
-                                        <label class="mb-1 block text-sm font-medium lp-title">Activity Date</label>
-                                        <input
-                                            type="date"
-                                            class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
-                                            x-model="activityEntryForm.activity_date"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label class="mb-1 block text-sm font-medium lp-title">Calls</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
-                                            x-model.number="activityEntryForm.calls"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label class="mb-1 block text-sm font-medium lp-title">Texts</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
-                                            x-model.number="activityEntryForm.texts"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label class="mb-1 block text-sm font-medium lp-title">Voicemails</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
-                                            x-model.number="activityEntryForm.voicemails"
-                                        />
-                                    </div>
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium lp-title">Activity Date</label>
+                                    <input
+                                        type="date"
+                                        class="w-full rounded-xl border border-[var(--lp-border)] px-4 py-2.5 text-sm"
+                                        x-model="activityEntryForm.activity_date"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="space-y-3">
+                                    <template x-for="field in manualCounters" :key="field.key">
+                                        <div class="flex items-center justify-between gap-3 rounded-2xl border border-[var(--lp-border)] bg-[var(--lp-canvas)] px-4 py-3">
+                                            <div>
+                                                <p class="text-sm font-medium lp-title" x-text="field.label"></p>
+                                                <p class="text-xs lp-muted" x-text="field.helper"></p>
+                                            </div>
+
+                                            <div class="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    class="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--lp-border)] text-lg font-semibold lp-title hover:bg-white disabled:opacity-40"
+                                                    @click="adjustActivityCount(field.key, -1)"
+                                                    :disabled="activityEntryForm[field.key] <= 0"
+                                                    :aria-label="`Decrease ${field.label}`"
+                                                >
+                                                    -
+                                                </button>
+                                                <span class="min-w-10 text-center text-lg font-semibold lp-title" x-text="activityEntryForm[field.key]"></span>
+                                                <button
+                                                    type="button"
+                                                    class="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--lp-border)] text-lg font-semibold lp-title hover:bg-white"
+                                                    @click="adjustActivityCount(field.key, 1)"
+                                                    :aria-label="`Increase ${field.label}`"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
 
                                 <div>
@@ -220,6 +222,11 @@
                     { key: 'text', label: 'Texts', className: 'bg-sky-500' },
                     { key: 'voicemail', label: 'Voicemails', className: 'bg-amber-500' },
                 ],
+                manualCounters: [
+                    { key: 'calls', label: 'Calls', helper: 'Add or remove a call from the daily stats.' },
+                    { key: 'texts', label: 'Texts', helper: 'Add or remove a text from the daily stats.' },
+                    { key: 'voicemails', label: 'Voicemails', helper: 'Add or remove a voicemail from the daily stats.' },
+                ],
                 activityEntryUrl: @js(route('admin.prospecting.activity-entries.store')),
                 csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
                 savingEntry: false,
@@ -251,6 +258,11 @@
                     const percent = Math.max((Number(value) / Number(maxTotal)) * 100, Number(value) > 0 ? 8 : 0);
 
                     return `height: ${Math.min(percent, 100)}%`;
+                },
+
+                adjustActivityCount(field, delta) {
+                    const currentValue = Number(this.activityEntryForm[field] ?? 0);
+                    this.activityEntryForm[field] = Math.max(0, currentValue + delta);
                 },
 
                 resetEntryForm() {

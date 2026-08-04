@@ -74,7 +74,10 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('Prospect Activity Dashboard');
         $response->assertSee('Track action outcomes with bars instead of raw counts');
         $response->assertSee('Log off-app activity');
-        $response->assertSee('Seven-day stacked activity bars');
+        $response->assertSee('Seven-day grouped activity bars');
+        $response->assertSee('Calls');
+        $response->assertSee('Texts');
+        $response->assertSee('Voicemails');
     }
 
     public function test_admin_can_log_off_app_activity_for_prospecting_dashboard(): void

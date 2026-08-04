@@ -114,6 +114,37 @@ class ProspectingToolTest extends TestCase
         $this->assertInstanceOf(ProspectingActivityEntry::class, ProspectingActivityEntry::query()->first());
     }
 
+    public function test_monthly_activity_resets_on_first_of_month(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        ProspectingActivityEntry::query()->create([
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'activity_date' => now()->startOfMonth()->subDay()->toDateString(),
+            'activity_type' => 'call',
+            'quantity' => 5,
+            'notes' => 'Should not count in the new month.',
+        ]);
+
+        ProspectingActivityEntry::query()->create([
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'activity_date' => now()->toDateString(),
+            'activity_type' => 'text',
+            'quantity' => 3,
+            'notes' => 'Counts this month.',
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(route('admin.prospecting.activity-summary'));
+
+        $response->assertOk();
+        $response->assertJsonPath('month.total', 3);
+        $response->assertJsonPath('month.called', 0);
+        $response->assertJsonPath('month.text', 3);
+        $response->assertJsonPath('month.voicemail', 0);
+    }
+
     public function test_admin_can_log_prospect_card_status(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

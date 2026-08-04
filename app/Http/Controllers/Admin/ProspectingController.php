@@ -1124,7 +1124,7 @@ class ProspectingController extends Controller
 
         return [
             'week' => $summarize('This Week', now()->subDays(7)),
-            'month' => $summarize('This Month', now()->subDays(30)),
+            'month' => $summarize('This Month', now()->startOfMonth()),
             'year' => $summarize('This Year', now()->subDays(365)),
             'daily_activity' => $dailyActivityValues,
             'max_daily_total' => $maxDailyTotal,

@@ -10,6 +10,7 @@ use App\Models\ProspectingSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ProspectingToolTest extends TestCase
@@ -143,6 +144,53 @@ class ProspectingToolTest extends TestCase
         $response->assertJsonPath('month.called', 0);
         $response->assertJsonPath('month.text', 3);
         $response->assertJsonPath('month.voicemail', 0);
+    }
+
+    public function test_weekly_activity_resets_after_monday_one_am(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-10 00:30:00'));
+
+        try {
+            $admin = User::factory()->create(['role' => 'admin']);
+
+            ProspectingCardStatus::query()->create([
+                'account_id' => $admin->account_id,
+                'user_id' => $admin->id,
+                'card_key' => 'week-boundary-sunday',
+                'skipped' => false,
+                'called' => true,
+                'left_voicemail' => false,
+                'sent_text' => false,
+                'created_at' => Carbon::parse('2026-08-09 20:00:00'),
+                'updated_at' => Carbon::parse('2026-08-09 20:00:00'),
+            ]);
+
+            ProspectingCardStatus::query()->create([
+                'account_id' => $admin->account_id,
+                'user_id' => $admin->id,
+                'card_key' => 'week-boundary-monday-before-reset',
+                'skipped' => false,
+                'called' => true,
+                'left_voicemail' => false,
+                'sent_text' => false,
+                'created_at' => Carbon::parse('2026-08-10 00:15:00'),
+                'updated_at' => Carbon::parse('2026-08-10 00:15:00'),
+            ]);
+
+            $beforeResetResponse = $this->actingAs($admin)->getJson(route('admin.prospecting.activity-summary'));
+            $beforeResetResponse->assertOk();
+            $beforeResetResponse->assertJsonPath('week.total', 2);
+            $beforeResetResponse->assertJsonPath('week.called', 2);
+
+            Carbon::setTestNow(Carbon::parse('2026-08-10 01:30:00'));
+
+            $afterResetResponse = $this->actingAs($admin)->getJson(route('admin.prospecting.activity-summary'));
+            $afterResetResponse->assertOk();
+            $afterResetResponse->assertJsonPath('week.total', 0);
+            $afterResetResponse->assertJsonPath('week.called', 0);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_admin_can_log_prospect_card_status(): void

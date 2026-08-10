@@ -1042,7 +1042,9 @@ class ProspectingController extends Controller
 
         $summarize = function (string $label, Carbon $start) use ($statuses, $manualEntries): array {
             $matchingStatuses = $statuses->filter(fn (ProspectingCardStatus $status) => $status->created_at && $status->created_at->gte($start));
-            $matchingManualEntries = $manualEntries->filter(fn (ProspectingActivityEntry $entry) => $entry->activity_date && Carbon::parse($entry->activity_date)->gte($start));
+            $matchingManualEntries = $manualEntries->filter(
+                fn (ProspectingActivityEntry $entry) => $entry->activity_date && Carbon::parse($entry->activity_date)->endOfDay()->gte($start)
+            );
 
             $called = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) $status->called)->count()
                 + $matchingManualEntries->where('activity_type', 'call')->sum('quantity');
@@ -1121,14 +1123,27 @@ class ProspectingController extends Controller
 
         $dailyActivityValues = array_values($dailyActivity);
         $maxDailyTotal = collect($dailyActivityValues)->max('total') ?? 0;
+        $weekStart = $this->currentWeeklyActivityStart();
 
         return [
-            'week' => $summarize('This Week', now()->subDays(7)),
+            'week' => $summarize('This Week', $weekStart),
             'month' => $summarize('This Month', now()->startOfMonth()),
             'year' => $summarize('This Year', now()->subDays(365)),
             'daily_activity' => $dailyActivityValues,
             'max_daily_total' => $maxDailyTotal,
         ];
+    }
+
+    private function currentWeeklyActivityStart(): Carbon
+    {
+        $now = now();
+        $weekStart = $now->copy()->startOfWeek(Carbon::MONDAY)->setTime(1, 0, 0);
+
+        if ($now->lt($weekStart)) {
+            $weekStart->subWeek();
+        }
+
+        return $weekStart;
     }
 
     private function duplicateLeadExists(string $name, string $address, int $accountId): bool

@@ -14,6 +14,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p class="text-xs uppercase tracking-[0.2em] lp-muted">Prospect Activity Dashboard</p>
+                            <p class="mt-1 text-sm lp-muted">Track action outcomes with bars instead of raw counts.</p>
                         </div>
                         <div class="rounded-full bg-[var(--lp-canvas)] px-3 py-1 text-xs lp-muted">Live activity</div>
                     </div>
@@ -104,7 +105,7 @@
                             <p class="text-xs uppercase tracking-[0.2em] lp-muted">Manual entry</p>
                             <h2 class="mt-1 text-2xl font-semibold lp-title">Log off-app activity</h2>
                             <p class="mt-2 text-sm lp-muted">
-                                Use this when calls, texts, or voicemails happened outside the app so daily totals stay accurate.
+                                Use this when calls, texts, voicemails, or booked appointments happened outside the app so daily totals stay accurate.
                             </p>
 
                             <form class="mt-6 space-y-4" @submit.prevent="submitActivityEntry">
@@ -187,12 +188,16 @@
                                     <span class="lp-title">Voicemails</span>
                                 </div>
                                 <div class="flex items-center gap-3">
+                                    <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+                                    <span class="lp-title">Appointments</span>
+                                </div>
+                                <div class="flex items-center gap-3">
                                     <span class="h-3 w-3 rounded-full bg-slate-300"></span>
                                     <span class="lp-title">Skipped</span>
                                 </div>
                             </div>
                             <p class="mt-6 text-xs leading-6 lp-muted">
-                                Manual entries are split into separate call, text, and voicemail rows, then folded into the weekly, monthly, yearly, and daily totals.
+                                Manual entries are split into separate call, text, voicemail, and appointment rows, then folded into the weekly, monthly, yearly, and daily totals.
                             </p>
                         </div>
                     </div>
@@ -205,9 +210,9 @@
         function activityDashboard() {
             return {
                 summary: @js($summary ?? [
-                    'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
-                    'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
-                    'year' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
+                    'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
+                    'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
+                    'year' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
                     'daily_activity' => [],
                     'max_daily_total' => 0,
                 ]),
@@ -220,11 +225,13 @@
                     { key: 'called', label: 'Calls', className: 'bg-slate-900' },
                     { key: 'text', label: 'Texts', className: 'bg-sky-500' },
                     { key: 'voicemail', label: 'Voicemails', className: 'bg-amber-500' },
+                    { key: 'appointment', label: 'Appointments', className: 'bg-emerald-500' },
                 ],
                 manualCounters: [
                     { key: 'calls', label: 'Calls', helper: 'Add or remove a call from the daily stats.' },
                     { key: 'texts', label: 'Texts', helper: 'Add or remove a text from the daily stats.' },
                     { key: 'voicemails', label: 'Voicemails', helper: 'Add or remove a voicemail from the daily stats.' },
+                    { key: 'appointments', label: 'Appointments', helper: 'Add or remove a booked appointment from the daily stats.' },
                 ],
                 activityEntryUrl: @js(route('admin.prospecting.activity-entries.store')),
                 csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
@@ -236,6 +243,7 @@
                     calls: 0,
                     texts: 0,
                     voicemails: 0,
+                    appointments: 0,
                     notes: '',
                 },
 
@@ -270,6 +278,7 @@
                         calls: 0,
                         texts: 0,
                         voicemails: 0,
+                        appointments: 0,
                         notes: '',
                     };
                 },

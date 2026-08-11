@@ -79,6 +79,7 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('Calls');
         $response->assertSee('Texts');
         $response->assertSee('Voicemails');
+        $response->assertSee('Appointments');
     }
 
     public function test_admin_can_log_off_app_activity_for_prospecting_dashboard(): void
@@ -93,23 +94,32 @@ class ProspectingToolTest extends TestCase
                 'calls' => 2,
                 'texts' => 1,
                 'voicemails' => 1,
+                'appointments' => 1,
                 'notes' => 'Logged after a callback block.',
             ]);
 
         $response->assertCreated();
         $response->assertJsonPath('message', 'Off-app activity logged.');
-        $response->assertJsonPath('summary.week.total', 4);
+        $response->assertJsonPath('summary.week.total', 5);
         $response->assertJsonPath('summary.week.called', 2);
         $response->assertJsonPath('summary.week.text', 1);
         $response->assertJsonPath('summary.week.voicemail', 1);
+        $response->assertJsonPath('summary.week.appointment', 1);
 
-        $this->assertDatabaseCount('prospecting_activity_entries', 3);
+        $this->assertDatabaseCount('prospecting_activity_entries', 4);
         $this->assertDatabaseHas('prospecting_activity_entries', [
             'account_id' => $admin->account_id,
             'user_id' => $admin->id,
             'activity_date' => now()->startOfDay()->toDateTimeString(),
             'activity_type' => 'call',
             'quantity' => 2,
+        ]);
+        $this->assertDatabaseHas('prospecting_activity_entries', [
+            'account_id' => $admin->account_id,
+            'user_id' => $admin->id,
+            'activity_date' => now()->startOfDay()->toDateTimeString(),
+            'activity_type' => 'appointment',
+            'quantity' => 1,
         ]);
 
         $this->assertInstanceOf(ProspectingActivityEntry::class, ProspectingActivityEntry::query()->first());
@@ -144,6 +154,7 @@ class ProspectingToolTest extends TestCase
         $response->assertJsonPath('month.called', 0);
         $response->assertJsonPath('month.text', 3);
         $response->assertJsonPath('month.voicemail', 0);
+        $response->assertJsonPath('month.appointment', 0);
     }
 
     public function test_weekly_activity_resets_after_monday_one_am(): void

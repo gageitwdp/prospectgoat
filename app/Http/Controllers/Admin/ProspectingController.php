@@ -242,6 +242,7 @@ class ProspectingController extends Controller
             'calls' => ['nullable', 'integer', 'min:0', 'max:999'],
             'texts' => ['nullable', 'integer', 'min:0', 'max:999'],
             'voicemails' => ['nullable', 'integer', 'min:0', 'max:999'],
+            'appointments' => ['nullable', 'integer', 'min:0', 'max:999'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -249,11 +250,12 @@ class ProspectingController extends Controller
             'call' => (int) ($data['calls'] ?? 0),
             'text' => (int) ($data['texts'] ?? 0),
             'voicemail' => (int) ($data['voicemails'] ?? 0),
+            'appointment' => (int) ($data['appointments'] ?? 0),
         ];
 
         if (array_sum($counts) <= 0) {
             return response()->json([
-                'message' => 'Add at least one call, text, or voicemail.',
+                'message' => 'Add at least one call, text, voicemail, or appointment.',
             ], 422);
         }
 
@@ -1053,6 +1055,7 @@ class ProspectingController extends Controller
                 + $matchingManualEntries->where('activity_type', 'voicemail')->sum('quantity');
             $text = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) $status->sent_text)->count()
                 + $matchingManualEntries->where('activity_type', 'text')->sum('quantity');
+            $appointment = $matchingManualEntries->where('activity_type', 'appointment')->sum('quantity');
 
             return [
                 'label' => $label,
@@ -1061,6 +1064,7 @@ class ProspectingController extends Controller
                 'skipped' => $skipped,
                 'voicemail' => $voicemail,
                 'text' => $text,
+                'appointment' => $appointment,
             ];
         };
 
@@ -1078,6 +1082,7 @@ class ProspectingController extends Controller
                 'skipped' => 0,
                 'voicemail' => 0,
                 'text' => 0,
+                'appointment' => 0,
             ];
         }
 
@@ -1113,6 +1118,7 @@ class ProspectingController extends Controller
                 'call' => 'called',
                 'text' => 'text',
                 'voicemail' => 'voicemail',
+                'appointment' => 'appointment',
                 default => null,
             };
 

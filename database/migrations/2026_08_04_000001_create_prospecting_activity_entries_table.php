@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('account_id')->constrained('accounts')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->date('activity_date');
-            $table->enum('activity_type', ['call', 'text', 'voicemail']);
+            $table->enum('activity_type', ['call', 'text', 'voicemail', 'appointment']);
             $table->unsignedSmallInteger('quantity')->default(1);
             $table->text('notes')->nullable();
             $table->timestamps();

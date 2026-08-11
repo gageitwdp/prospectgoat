@@ -17,6 +17,8 @@ use Illuminate\View\View;
 
 class LeadController extends Controller
 {
+    private const PIPELINE_PAGE_SIZES = [5, 10, 25, 50, 100];
+
     public function __construct()
     {
         abort_if($this->currentUserIsGlobalAdmin(), 403);
@@ -60,26 +62,25 @@ class LeadController extends Controller
             $period = '30';
         }
 
-        $query = Lead::query()
+        $baseQuery = Lead::query()
             ->tap(fn ($query) => $this->scopeLeadsForCurrentUser($query))
             ->with('assignedManager');
 
         if ($period !== 'all') {
-            $query->where('created_at', '>=', now()->subDays((int) $period));
+            $baseQuery->where('created_at', '>=', now()->subDays((int) $period));
         }
 
-        $leads = $query
-            ->latest()
+        $metricsLeads = (clone $baseQuery)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
 
-        $leadGroups = $leads->groupBy('status');
-
-        $totalLeads = $leads->count();
-        $closedLeads = $leadGroups->get('closed', collect())->count();
+        $totalLeads = $metricsLeads->count();
+        $closedLeads = $metricsLeads->where('status', 'closed')->count();
         $activeLeads = $totalLeads - $closedLeads;
         $closeRate = $totalLeads > 0 ? (int) round(($closedLeads / $totalLeads) * 100) : 0;
 
-        $openLeads = $leads->filter(fn (Lead $lead) => $lead->status !== 'closed');
+        $openLeads = $metricsLeads->filter(fn (Lead $lead) => $lead->status !== 'closed');
         $averageOpenDays = $openLeads->count() > 0
             ? (int) round($openLeads->avg(fn (Lead $lead) => $lead->created_at->diffInDays(now())))
             : 0;
@@ -92,7 +93,36 @@ class LeadController extends Controller
             'avg_open_days' => $averageOpenDays,
         ];
 
-        return view('manager.leads.pipeline', compact('statuses', 'leadGroups', 'metrics', 'period', 'periods'));
+        $sections = [];
+
+        foreach ($statuses as $status) {
+            $searchKey = "{$status}_search";
+            $perPageKey = "{$status}_per_page";
+            $pageKey = "{$status}_page";
+
+            $search = trim($request->string($searchKey)->toString());
+            $perPage = (int) $request->integer($perPageKey, self::PIPELINE_PAGE_SIZES[0]);
+
+            if (! in_array($perPage, self::PIPELINE_PAGE_SIZES, true)) {
+                $perPage = self::PIPELINE_PAGE_SIZES[0];
+            }
+
+            $sectionQuery = (clone $baseQuery)
+                ->where('status', $status)
+                ->when($search !== '', fn ($query) => $query->search($search))
+                ->orderByDesc('created_at')
+                ->orderByDesc('id');
+
+            $sections[$status] = [
+                'label' => ucfirst($status),
+                'search' => $search,
+                'per_page' => $perPage,
+                'page_key' => $pageKey,
+                'leads' => $sectionQuery->paginate($perPage, ['*'], $pageKey)->withQueryString(),
+            ];
+        }
+
+        return view('manager.leads.pipeline', compact('statuses', 'sections', 'metrics', 'period', 'periods'));
     }
 
     public function create(): View

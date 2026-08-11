@@ -700,6 +700,60 @@ class LeadManagementTest extends TestCase
         $response->assertSee('Pipeline Active');
     }
 
+    public function test_pipeline_board_paginates_sections_and_searches_by_name_address_and_phone(): void
+    {
+        $manager = User::factory()->create(['role' => 'agent']);
+
+        foreach (range(1, 6) as $index) {
+            $lead = Lead::create([
+                'name' => "Pipeline Lead {$index}",
+                'email' => "pipeline-lead-{$index}@example.com",
+                'phone' => "555-03{$index}0",
+                'address' => "{$index} Maple Street",
+                'lead_type' => 'buyer',
+                'source' => 'homepage',
+                'status' => 'new',
+                'assigned_to' => null,
+            ]);
+
+            $lead->created_at = now()->subMinutes($index);
+            $lead->updated_at = now()->subMinutes($index);
+            $lead->save();
+        }
+
+        $defaultResponse = $this->actingAs($manager)->get(route('manager.leads.pipeline'));
+
+        $defaultResponse->assertOk();
+        $defaultResponse->assertSee('Rows per page');
+        $defaultResponse->assertSee('Pipeline Lead 1');
+        $defaultResponse->assertSee('Pipeline Lead 5');
+        $defaultResponse->assertDontSee('Pipeline Lead 6');
+
+        $secondPageResponse = $this->actingAs($manager)->get(route('manager.leads.pipeline', ['new_page' => 2]));
+
+        $secondPageResponse->assertOk();
+        $secondPageResponse->assertSee('Pipeline Lead 6');
+        $secondPageResponse->assertDontSee('Pipeline Lead 1');
+
+        $expandedResponse = $this->actingAs($manager)->get(route('manager.leads.pipeline', ['new_per_page' => 10]));
+
+        $expandedResponse->assertOk();
+        $expandedResponse->assertSee('Pipeline Lead 6');
+
+        $nameSearchResponse = $this->actingAs($manager)->get(route('manager.leads.pipeline', ['new_search' => 'Lead 3']));
+        $nameSearchResponse->assertOk();
+        $nameSearchResponse->assertSee('Pipeline Lead 3');
+        $nameSearchResponse->assertDontSee('Pipeline Lead 1');
+
+        $addressSearchResponse = $this->actingAs($manager)->get(route('manager.leads.pipeline', ['new_search' => '4 Maple']));
+        $addressSearchResponse->assertOk();
+        $addressSearchResponse->assertSee('Pipeline Lead 4');
+
+        $phoneSearchResponse = $this->actingAs($manager)->get(route('manager.leads.pipeline', ['new_search' => '555-0360']));
+        $phoneSearchResponse->assertOk();
+        $phoneSearchResponse->assertSee('Pipeline Lead 6');
+    }
+
     public function test_manager_can_view_buyer_qualification_summary_on_lead_detail(): void
     {
         $manager = User::factory()->create(['role' => 'agent']);

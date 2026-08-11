@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
     'called',
     'left_voicemail',
     'sent_text',
+    'appointment',
     'created_at',
     'updated_at',
 ])]

@@ -32,6 +32,7 @@ class ProspectingToolTest extends TestCase
         $response->assertSee('Edit Script Content');
         $response->assertSee('I noticed your home was listed on the market and recently expired.');
         $response->assertSee('Is it still available?');
+        $response->assertSee('Booked an Appointment');
     }
 
     public function test_prospecting_page_renders_quick_search_for_prospects(): void
@@ -217,6 +218,7 @@ class ProspectingToolTest extends TestCase
                 'called' => false,
                 'left_voicemail' => true,
                 'sent_text' => false,
+                'appointment' => true,
             ]);
 
         $response->assertOk();
@@ -230,7 +232,12 @@ class ProspectingToolTest extends TestCase
             'called' => 0,
             'left_voicemail' => 1,
             'sent_text' => 0,
+            'appointment' => 1,
         ]);
+
+        $activitySummaryResponse = $this->actingAs($admin)->getJson(route('admin.prospecting.activity-summary'));
+        $activitySummaryResponse->assertOk();
+        $activitySummaryResponse->assertJsonPath('week.appointment', 1);
 
         $this->assertInstanceOf(ProspectingCardStatus::class, ProspectingCardStatus::query()->where('card_key', 'card-1')->first());
     }

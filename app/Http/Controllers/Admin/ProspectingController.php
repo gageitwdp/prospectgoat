@@ -554,6 +554,7 @@ class ProspectingController extends Controller
             'called' => ['required', 'boolean'],
             'left_voicemail' => ['required', 'boolean'],
             'sent_text' => ['required', 'boolean'],
+            'appointment' => ['required', 'boolean'],
         ]);
 
         ProspectingCardStatus::query()->updateOrCreate([
@@ -565,6 +566,7 @@ class ProspectingController extends Controller
             'called' => (bool) $data['called'],
             'left_voicemail' => (bool) $data['left_voicemail'],
             'sent_text' => (bool) $data['sent_text'],
+            'appointment' => (bool) $data['appointment'],
         ]);
 
         return response()->json([
@@ -1021,9 +1023,9 @@ class ProspectingController extends Controller
     {
         if ($userId === null || $userId <= 0) {
             return [
-                'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
-                'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
-                'year' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
+                'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
+                'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
+                'year' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
                 'daily_activity' => [],
                 'max_daily_total' => 0,
             ];
@@ -1055,7 +1057,8 @@ class ProspectingController extends Controller
                 + $matchingManualEntries->where('activity_type', 'voicemail')->sum('quantity');
             $text = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) $status->sent_text)->count()
                 + $matchingManualEntries->where('activity_type', 'text')->sum('quantity');
-            $appointment = $matchingManualEntries->where('activity_type', 'appointment')->sum('quantity');
+            $appointment = $matchingStatuses->filter(fn (ProspectingCardStatus $status) => (bool) ($status->appointment ?? false))->count()
+                + $matchingManualEntries->where('activity_type', 'appointment')->sum('quantity');
 
             return [
                 'label' => $label,
@@ -1102,6 +1105,7 @@ class ProspectingController extends Controller
             $dailyActivity[$date]['skipped'] += (int) $status->skipped;
             $dailyActivity[$date]['voicemail'] += (int) $status->left_voicemail;
             $dailyActivity[$date]['text'] += (int) $status->sent_text;
+            $dailyActivity[$date]['appointment'] += (int) ($status->appointment ?? false);
         }
 
         foreach ($manualEntries as $entry) {

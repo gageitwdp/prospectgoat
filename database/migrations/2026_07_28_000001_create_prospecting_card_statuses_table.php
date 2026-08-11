@@ -17,6 +17,7 @@ return new class extends Migration
             $table->boolean('called')->default(false);
             $table->boolean('left_voicemail')->default(false);
             $table->boolean('sent_text')->default(false);
+            $table->boolean('appointment')->default(false);
             $table->timestamps();
 
             $table->unique(['account_id', 'user_id', 'card_key']);

@@ -366,6 +366,13 @@
                             <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.sent_text === false ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('sent_text', false)">No</button>
                         </div>
                     </div>
+                    <div class="flex items-center justify-between rounded-xl border border-[var(--lp-border)] px-4 py-3">
+                        <span class="text-sm font-medium lp-title">Booked an Appointment</span>
+                        <div class="flex gap-2">
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.appointment ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('appointment', true)">Yes</button>
+                            <button type="button" class="rounded-lg px-3 py-1.5 text-sm" :class="statusModal.appointment === false ? 'bg-[var(--lp-secondary)] text-white' : 'border border-[var(--lp-border)] lp-title hover:bg-[var(--lp-canvas)]'" @click="setStatusModalValue('appointment', false)">No</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-6 flex justify-end gap-2">
@@ -474,9 +481,9 @@
                 parseError: '',
                 saveSuccess: '',
                 activitySummary: @js($activitySummary ?? [
-                    'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
-                    'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0],
-                    'year' => ['total' => 0, 'called' => 0, 'voicemail' => 0, 'skipped' => 0, 'text' => 0],
+                    'week' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
+                    'month' => ['total' => 0, 'called' => 0, 'skipped' => 0, 'voicemail' => 0, 'text' => 0, 'appointment' => 0],
+                    'year' => ['total' => 0, 'called' => 0, 'voicemail' => 0, 'skipped' => 0, 'text' => 0, 'appointment' => 0],
                 ]),
                 saveError: '',
                 copySuccess: '',
@@ -491,6 +498,7 @@
                     called: false,
                     left_voicemail: false,
                     sent_text: false,
+                    appointment: false,
                     saving: false,
                 },
                 statusModalProspectName: '',
@@ -659,6 +667,7 @@
                         called: false,
                         left_voicemail: false,
                         sent_text: false,
+                        appointment: false,
                         saving: false,
                     };
                     this.statusModalProspectName = this.currentRow?.owner_full_name || 'this prospect';
@@ -1025,6 +1034,7 @@
                                 called: Boolean(this.statusModal.called),
                                 left_voicemail: Boolean(this.statusModal.left_voicemail),
                                 sent_text: Boolean(this.statusModal.sent_text),
+                                appointment: Boolean(this.statusModal.appointment),
                             }),
                         });
 

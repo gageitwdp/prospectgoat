@@ -354,6 +354,28 @@ class LeadController extends Controller
         return back()->with('status', 'Lead stage updated.');
     }
 
+    public function resetStatus(Request $request, Lead $lead): RedirectResponse
+    {
+        $this->ensureLeadAccessible($lead);
+
+        if ($lead->status === 'new') {
+            return back()->with('status', 'Lead is already at the starting stage.');
+        }
+
+        $originalStatus = $lead->status;
+        $lead->update(['status' => 'new']);
+
+        if ($originalStatus !== $lead->status) {
+            $lead->activities()->create([
+                'account_id' => $lead->account_id,
+                'type' => 'note',
+                'description' => sprintf('Lead status reset from %s to new.', $originalStatus),
+            ]);
+        }
+
+        return back()->with('status', 'Lead status reset to new.');
+    }
+
     public function destroy(Request $request, Lead $lead): RedirectResponse
     {
         $this->ensureLeadAccessible($lead);

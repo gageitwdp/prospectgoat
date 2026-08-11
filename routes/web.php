@@ -78,6 +78,7 @@ Route::middleware(['auth', 'billing.active', 'manager', 'module.enabled:lead_man
     Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
     Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
     Route::patch('/leads/{lead}/status', [LeadController::class, 'moveStatus'])->name('leads.status.move');
+    Route::patch('/leads/{lead}/status/reset', [LeadController::class, 'resetStatus'])->name('leads.status.reset');
 
     Route::post('/leads/{lead}/activities', [LeadActivityController::class, 'store'])->name('leads.activities.store');
 

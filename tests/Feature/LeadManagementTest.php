@@ -902,6 +902,37 @@ class LeadManagementTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_reset_pipeline_lead_status_to_new(): void
+    {
+        $manager = User::factory()->create(['role' => 'agent']);
+
+        $lead = Lead::create([
+            'name' => 'Reset Status Lead',
+            'email' => 'reset-status@example.com',
+            'phone' => '555-0223',
+            'address' => null,
+            'lead_type' => 'buyer',
+            'source' => 'homepage',
+            'status' => 'active',
+            'assigned_to' => null,
+        ]);
+
+        $response = $this->actingAs($manager)->patch(route('manager.leads.status.reset', $lead));
+
+        $response->assertSessionHas('status', 'Lead status reset to new.');
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $lead->id,
+            'status' => 'new',
+        ]);
+
+        $this->assertDatabaseHas('lead_activities', [
+            'lead_id' => $lead->id,
+            'type' => 'note',
+            'description' => 'Lead status reset from active to new.',
+        ]);
+    }
+
     public function test_manager_cannot_skip_pipeline_stages_with_invalid_transition(): void
     {
         $manager = User::factory()->create(['role' => 'agent']);

@@ -139,6 +139,16 @@
                                     <div class="flex flex-wrap items-center justify-end gap-2">
                                         <a href="{{ route('manager.leads.show', $lead) }}" class="rounded-lg border border-[var(--lp-border)] px-3 py-1.5 text-xs lp-title">Open</a>
 
+                                        @if ($lead->status !== 'new')
+                                            <form method="POST" action="{{ route('manager.leads.status.reset', $lead) }}" onsubmit="return confirm('Reset this lead back to New?');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">
+                                                    Reset
+                                                </button>
+                                            </form>
+                                        @endif
+
                                         @php
                                             $nextMap = [
                                                 'new' => ['contacted'],
